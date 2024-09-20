@@ -8,12 +8,104 @@ templ MainLayout() {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<script src="https://unpkg.com/htmx.org@2.0.2"></script>
 			<script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline/script.js"></script>
+			<script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js"></script>
 			<title>OCR Web UI</title>
 		</head>
 		<body>
-			<script>
-				
-			</script>
+			<div>
+				<canvas></canvas>
+				<img src="https://i.pinimg.com/736x/72/eb/36/72eb365f16469ea0e6093d29e42c5924.jpg"/>
+				<style>
+					me {
+						background: red;
+					}
+
+					me img {
+						z-index: 0;
+						position: relative;
+					}
+
+					me canvas {
+						z-index: 20;
+						position: absolute;
+					}
+				</style>
+				<script>
+					const img = me("img")
+					const canvas = me("canvas")
+					canvas.width = img.width
+					canvas.height = img.height
+					const ctx = canvas.getContext("2d")
+
+					const pos = { start: { x: null, y: null }, end: { x: null, y: null } }
+					canvas.onmousedown = function (e) {
+						clearPosForm()
+						pos.start = getPosition(e)
+					}
+					canvas.onmousemove = function (e) {
+						const { x, y } = getPosition(e)
+						drawRect(ctx, pos.start.x, pos.start.y, x, y)
+					}
+					canvas.onmouseup = function (e) {
+						pos.end = getPosition(e)
+						drawRect(ctx, pos.start.x, pos.start.y, pos.end.x, pos.end.y)
+						fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y)
+						clearPos()
+					}
+
+					const clearPos = function () {
+						pos.start.x = null
+						pos.start.y = null
+						pos.end.x = null
+						pos.end.y = null
+					}
+
+					const getPosition = function (e) {
+						const rect = e.target.getBoundingClientRect();
+						const x = e.clientX - rect.left;
+						const y = e.clientY - rect.top;
+						return { x: x, y: y }
+					}
+
+					const drawRect = function (ctx, a, b, x, y) {
+						if (a !== null && b !== null && x !== null && y !== null) {
+							if (a > x) {
+								[a, x] = [x, a]
+							}
+							if (b > y) {
+								[b, y] = [y, b]
+							}
+							ctx.clearRect(0, 0, canvas.width, canvas.height);
+							ctx.strokeRect(a, b, x - a, y - b)
+						}
+					}
+				</script>
+			</div>
+			<form>
+				<input type="number" name="a"/>
+				<input type="number" name="b"/>
+				<input type="number" name="x"/>
+				<input type="number" name="y"/>
+				<script>
+					const clearPosForm = function () {
+						const inputs = any("input")
+						inputs.forEach(i => i.value = "")
+					}
+					const fillPosForm = function (a, b, x, y) {
+						const inputs = any("input")
+						if (a > x) {
+							[a, x] = [x, a]
+						}
+						if (b > y) {
+							[b, y] = [y, b]
+						}
+						inputs[0].value = a
+						inputs[1].value = b
+						inputs[2].value = x
+						inputs[3].value = y
+					}
+				</script>
+			</form>
 		</body>
 	</html>
 }
