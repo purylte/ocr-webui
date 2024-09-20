@@ -14,7 +14,9 @@ templ MainLayout() {
 		<body>
 			<div>
 				<canvas></canvas>
-				<img src="https://i.pinimg.com/736x/72/eb/36/72eb365f16469ea0e6093d29e42c5924.jpg"/>
+				<div id="img-container">
+					<img id="img" src="https://i.pinimg.com/736x/72/eb/36/72eb365f16469ea0e6093d29e42c5924.jpg"/>
+				</div>
 				<style>
 					me {
 						background: red;
@@ -31,26 +33,39 @@ templ MainLayout() {
 					}
 				</style>
 				<script>
-					const img = me("img")
-					const canvas = me("canvas")
-					canvas.width = img.width
-					canvas.height = img.height
-					const ctx = canvas.getContext("2d")
-
 					const pos = { start: { x: null, y: null }, end: { x: null, y: null } }
-					canvas.onmousedown = function (e) {
-						clearPosForm()
-						pos.start = getPosition(e)
+					let canvas;
+					let ctx;
+					window.onload = (e) => {
+						canvas = me("canvas")
+						ctx = canvas.getContext("2d")
+						calculateCanvasBound()
+						
+						canvas.onmousedown = function (e) {
+							clearPosForm()
+							pos.start = getPosition(e)
+						}
+						canvas.onmousemove = function (e) {
+							const { x, y } = getPosition(e)
+							drawRect(ctx, pos.start.x, pos.start.y, x, y)
+						}
+						canvas.onmouseup = function (e) {
+							pos.end = getPosition(e)
+							drawRect(ctx, pos.start.x, pos.start.y, pos.end.x, pos.end.y)
+							fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y)
+							clearPos()
+						}
 					}
-					canvas.onmousemove = function (e) {
-						const { x, y } = getPosition(e)
-						drawRect(ctx, pos.start.x, pos.start.y, x, y)
-					}
-					canvas.onmouseup = function (e) {
-						pos.end = getPosition(e)
-						drawRect(ctx, pos.start.x, pos.start.y, pos.end.x, pos.end.y)
-						fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y)
-						clearPos()
+					me("#img-container").on('htmx:afterSettle', function(evt) {
+							calculateCanvasBound()
+							clearPosForm()
+					});
+
+				
+					const calculateCanvasBound = function (e) {
+						const img = document.getElementById("img")
+						canvas.width = img.width
+						canvas.height = img.height
 					}
 
 					const clearPos = function () {
@@ -81,18 +96,35 @@ templ MainLayout() {
 					}
 				</script>
 			</div>
+			<button hx-post="/clipboard" hx-target="#img-container" hx-swap="innerHTML">Clipboard</button>
+			<form hx-post="/upload" hx-target="#img-container" hx-swap="innerHTML" enctype="multipart/form-data">
+				<input type="file" name="image" accept="image/*" required/>
+				<button type="submit" class="upload-button">Upload</button>
+				<div class="loading-indicator">Loading...</div>
+				<style>
+					.loading-indicator{
+						display:none;
+					}
+					.htmx-request .loading-indicator{
+						display:inline;
+				    }
+					.htmx-request .upload-button{
+						display:none;
+					}
+				</style>
+			</form>
 			<form>
-				<input type="number" name="a"/>
-				<input type="number" name="b"/>
-				<input type="number" name="x"/>
-				<input type="number" name="y"/>
+				<input type="number" class="pos-input" name="a"/>
+				<input type="number" class="pos-input" name="b"/>
+				<input type="number" class="pos-input" name="x"/>
+				<input type="number" class="pos-input" name="y"/>
 				<script>
 					const clearPosForm = function () {
-						const inputs = any("input")
+						const inputs = any(".pos-input")
 						inputs.forEach(i => i.value = "")
 					}
 					const fillPosForm = function (a, b, x, y) {
-						const inputs = any("input")
+						const inputs = any(".pos-input")
 						if (a > x) {
 							[a, x] = [x, a]
 						}
