@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -26,16 +28,63 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(tempImageDir))))
-	mux.HandleFunc("/", rootHandler)
+	mux.HandleFunc("/img/", protectImageHandler)
+	mux.HandleFunc("/app", appHandler)
 	mux.HandleFunc("/upload", uploadHandler)
-	log.Fatal(http.ListenAndServe(":3000", mux))
+	log.Fatal(http.ListenAndServe(":3000", sessionManager.LoadAndSave(mux)))
 
 }
 
-func rootHandler(w http.ResponseWriter, r *http.Request) {
+func protectImageHandler(w http.ResponseWriter, r *http.Request) {
+	imageName := r.URL.Path[len("/img/"):]
+	if !canAccessImage(r.Context(), imageName) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// file, err := os.Open(imagePath)
+	// if err != nil {
+	// 	http.Error(w, "File not found", http.StatusNotFound)
+	// 	return
+	// }
+	// defer file.Close()
+	http.ServeFile(w, r, tempImageDir+"/"+imageName)
+}
+
+func appHandler(w http.ResponseWriter, r *http.Request) {
 	component := templates.MainLayout()
 	component.Render(r.Context(), w)
+}
+
+func canAccessImage(ctx context.Context, imageName string) bool {
+	imagesJson := sessionManager.GetString(ctx, "images")
+	if imagesJson == "" {
+		return false
+	}
+	var imageNames []string
+	json.Unmarshal([]byte(imagesJson), &imageNames)
+	for _, name := range imageNames {
+		if name == imageName {
+			return true
+		}
+	}
+	return false
+}
+
+func putAllowedImage(ctx context.Context, imageName string) error {
+	imagesJson := sessionManager.GetString(ctx, "images")
+	var imageNames []string
+	if imagesJson != "" {
+		json.Unmarshal([]byte(imagesJson), &imageNames)
+	}
+	imageNames = append(imageNames, imageName)
+
+	updatedImageJson, err := json.Marshal(imageNames)
+	if err != nil {
+		return err
+	}
+	sessionManager.Put(ctx, "images", string(updatedImageJson))
+	return nil
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -86,6 +135,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to save file "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	templates.Image("static/"+randFileName).Render(r.Context(), w)
+
+	if err = putAllowedImage(r.Context(), randFileName); err != nil {
+		http.Error(w, "unable to save to session "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	templates.Image("img/"+randFileName).Render(r.Context(), w)
 
 }
