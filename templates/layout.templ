@@ -1,149 +1,165 @@
 package templates
 
 templ MainLayout() {
-	<!DOCTYPE html>
-	<html lang="en">
-		<head>
-			<meta charset="UTF-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<script src="https://unpkg.com/htmx.org@2.0.2"></script>
-			<script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline/script.js"></script>
-			<script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js"></script>
-			<title>OCR Web UI</title>
-		</head>
-		<body>
-			<div>
-				<canvas></canvas>
-				<div id="img-container">
-					<img id="img" src="https://i.pinimg.com/736x/72/eb/36/72eb365f16469ea0e6093d29e42c5924.jpg"/>
-				</div>
-				<style>
-					me {
-						background: red;
-					}
+<!DOCTYPE html>
+<html lang="en">
 
-					me img {
-						z-index: 0;
-						position: relative;
-					}
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<script src="https://unpkg.com/htmx.org@2.0.2"></script>
+	<script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline/script.js"></script>
+	<script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js"></script>
+	<title>OCR Web UI</title>
+</head>
 
-					me canvas {
-						z-index: 20;
-						position: absolute;
-					}
-				</style>
-				<script>
-					const pos = { start: { x: null, y: null }, end: { x: null, y: null } }
-					let canvas;
-					let ctx;
-					window.onload = (e) => {
-						canvas = me("canvas")
-						ctx = canvas.getContext("2d")
-						calculateCanvasBound()
-						
-						canvas.onmousedown = function (e) {
-							clearPosForm()
-							pos.start = getPosition(e)
-						}
-						canvas.onmousemove = function (e) {
-							const { x, y } = getPosition(e)
-							drawRect(ctx, pos.start.x, pos.start.y, x, y)
-						}
-						canvas.onmouseup = function (e) {
-							pos.end = getPosition(e)
-							drawRect(ctx, pos.start.x, pos.start.y, pos.end.x, pos.end.y)
-							fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y)
-							clearPos()
-						}
-					}
-					me("#img-container").on('htmx:afterSettle', function(evt) {
-							calculateCanvasBound()
-							clearPosForm()
-					});
+<body>
+	<div>
+		<style>
+			me {
+				display: flex;
+				column-gap: 1rem;
+			}
+		</style>
+		<button hx-post="/clipboard" hx-target="#img-container" hx-swap="innerHTML">Clipboard</button>
+		<form hx-post="/upload" hx-target="#img-container" hx-swap="innerHTML" enctype="multipart/form-data"
+			hx-on::after-request="this.reset()">
+			<input type="file" name="image" accept="image/*" required hx- />
+			<button type="submit" class="upload-button">Upload</button>
+			<div class="loading-indicator">Loading...</div>
+			<style>
+				.loading-indicator {
+					display: none;
+				}
 
-				
-					const calculateCanvasBound = function (e) {
-						const img = document.getElementById("img")
-						canvas.width = img.width
-						canvas.height = img.height
-					}
+				.htmx-request .loading-indicator {
+					display: inline;
+				}
 
-					const clearPos = function () {
-						pos.start.x = null
-						pos.start.y = null
-						pos.end.x = null
-						pos.end.y = null
-					}
+				.htmx-request .upload-button {
+					display: none;
+				}
+			</style>
+		</form>
+	</div>
+	<div>
+		<canvas></canvas>
+		<div id="img-container">
+			<img id="img" src="https://i.pinimg.com/736x/72/eb/36/72eb365f16469ea0e6093d29e42c5924.jpg" />
+		</div>
+		<style>
+			me {
+				background: red;
+			}
 
-					const getPosition = function (e) {
-						const rect = e.target.getBoundingClientRect();
-						const x = e.clientX - rect.left;
-						const y = e.clientY - rect.top;
-						return { x: x, y: y }
-					}
+			me img {
+				z-index: 0;
+				position: relative;
+			}
 
-					const drawRect = function (ctx, a, b, x, y) {
-						if (a !== null && b !== null && x !== null && y !== null) {
-							if (a > x) {
-								[a, x] = [x, a]
-							}
-							if (b > y) {
-								[b, y] = [y, b]
-							}
-							ctx.clearRect(0, 0, canvas.width, canvas.height);
-							ctx.strokeRect(a, b, x - a, y - b)
-						}
+			me canvas {
+				z-index: 20;
+				position: absolute;
+			}
+		</style>
+		<script>
+			const pos = { start: { x: null, y: null }, end: { x: null, y: null } }
+			let canvas;
+			let ctx;
+			window.onload = (e) => {
+				canvas = me("canvas")
+				ctx = canvas.getContext("2d")
+				calculateCanvasBound()
+
+				canvas.onmousedown = function (e) {
+					clearPosForm()
+					pos.start = getPosition(e)
+				}
+				canvas.onmousemove = function (e) {
+					const { x, y } = getPosition(e)
+					drawRect(ctx, pos.start.x, pos.start.y, x, y)
+				}
+				canvas.onmouseup = function (e) {
+					pos.end = getPosition(e)
+					drawRect(ctx, pos.start.x, pos.start.y, pos.end.x, pos.end.y)
+					fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y)
+					clearPos()
+				}
+			}
+			me("#img-container").on('htmx:afterSettle', function (evt) {
+				calculateCanvasBound()
+				clearPosForm()
+			});
+
+
+			const calculateCanvasBound = function (e) {
+				const img = document.getElementById("img")
+				canvas.width = img.width
+				canvas.height = img.height
+			}
+
+			const clearPos = function () {
+				pos.start.x = null
+				pos.start.y = null
+				pos.end.x = null
+				pos.end.y = null
+			}
+
+			const getPosition = function (e) {
+				const rect = e.target.getBoundingClientRect();
+				const x = Math.round(e.clientX - rect.left);
+				const y = Math.round(e.clientY - rect.top);
+				return { x: x, y: y }
+			}
+
+			const drawRect = function (ctx, a, b, x, y) {
+				if (a !== null && b !== null && x !== null && y !== null) {
+					if (a > x) {
+						[a, x] = [x, a]
 					}
-				</script>
-			</div>
-			<button hx-post="/clipboard" hx-target="#img-container" hx-swap="innerHTML">Clipboard</button>
-			<form hx-post="/upload" hx-target="#img-container" hx-swap="innerHTML" enctype="multipart/form-data">
-				<input type="file" name="image" accept="image/*" required/>
-				<button type="submit" class="upload-button">Upload</button>
-				<div class="loading-indicator">Loading...</div>
-				<style>
-					.loading-indicator{
-						display:none;
+					if (b > y) {
+						[b, y] = [y, b]
 					}
-					.htmx-request .loading-indicator{
-						display:inline;
-				    }
-					.htmx-request .upload-button{
-						display:none;
-					}
-				</style>
-			</form>
-			<div id="response-img">
-				<div>
-					crop your image!
-				</div>
-			</div>
-			<form hx-post="/crop" hx-target="#response-img" hx-swap="innerHTML">
-				<button type="submit">Crop</button>
-				<input type="number" class="pos-input" name="a"/>
-				<input type="number" class="pos-input" name="b"/>
-				<input type="number" class="pos-input" name="x"/>
-				<input type="number" class="pos-input" name="y"/>
-				<script>
-					const clearPosForm = function () {
-						const inputs = any(".pos-input")
-						inputs.forEach(i => i.value = "")
-					}
-					const fillPosForm = function (a, b, x, y) {
-						const inputs = any(".pos-input")
-						if (a > x) {
-							[a, x] = [x, a]
-						}
-						if (b > y) {
-							[b, y] = [y, b]
-						}
-						inputs[0].value = a
-						inputs[1].value = b
-						inputs[2].value = x
-						inputs[3].value = y
-					}
-				</script>
-			</form>
-		</body>
-	</html>
+					ctx.clearRect(0, 0, canvas.width, canvas.height);
+					ctx.strokeRect(a, b, x - a, y - b)
+				}
+			}
+		</script>
+	</div>
+
+
+	<form hx-post="/crop" hx-target="#response-img" hx-swap="innerHTML">
+		<button type="submit">Crop</button>
+		<input type="number" class="pos-input" name="a" />
+		<input type="number" class="pos-input" name="b" />
+		<input type="number" class="pos-input" name="x" />
+		<input type="number" class="pos-input" name="y" />
+		<script>
+			const clearPosForm = function () {
+				const inputs = any(".pos-input")
+				inputs.forEach(i => i.value = "")
+			}
+			const fillPosForm = function (a, b, x, y) {
+				const inputs = any(".pos-input")
+				if (a > x) {
+					[a, x] = [x, a]
+				}
+				if (b > y) {
+					[b, y] = [y, b]
+				}
+				inputs[0].value = a
+				inputs[1].value = b
+				inputs[2].value = x
+				inputs[3].value = y
+			}
+		</script>
+	</form>
+	<div id="response-img">
+		<div>
+			crop your image!
+		</div>
+	</div>
+</body>
+
+</html>
 }
