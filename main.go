@@ -1,29 +1,42 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
+	"encoding/base64"
+	"encoding/gob"
 	"encoding/hex"
-	"encoding/json"
+	"fmt"
+	"image"
+	"image/draw"
+	"image/jpeg"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/otiai10/gosseract/v2"
 	"github.com/purylte/ocr-webui/templates"
+
+	_ "image/png"
 )
 
 var sessionManager *scs.SessionManager
-
-const tempImageDir = "tmp/img"
+var tempDir string
 
 func main() {
 	sessionManager = scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
+	gob.Register([]*ImageData{})
+	gob.Register(ImageData{})
 
-	if err := os.MkdirAll(tempImageDir, os.ModePerm); err != nil {
+	var err error
+	tempDir, err = initTempDir()
+	if err != nil {
 		log.Fatalf("cannot create temp image dir: %v", err)
 	}
 
@@ -31,8 +44,33 @@ func main() {
 	mux.HandleFunc("/img/", protectImageHandler)
 	mux.HandleFunc("/app", appHandler)
 	mux.HandleFunc("/upload", uploadHandler)
+	mux.HandleFunc("/crop", cropHandler)
 	log.Fatal(http.ListenAndServe(":3000", sessionManager.LoadAndSave(mux)))
 
+}
+
+func initTempDir() (string, error) {
+	tempBase := os.TempDir()
+	appTempDir := filepath.Join(tempBase, "ocr-img")
+
+	if err := os.MkdirAll(appTempDir, 0700); err != nil {
+		return "", fmt.Errorf("failed to create app temp directory: %w", err)
+	}
+
+	testFile, err := os.CreateTemp(appTempDir, "write-test-")
+	if err != nil {
+		return "", fmt.Errorf("app temp directory is not writable: %w", err)
+	}
+
+	testFile.Close()
+	os.Remove(testFile.Name())
+
+	return appTempDir, nil
+}
+
+func appHandler(w http.ResponseWriter, r *http.Request) {
+	component := templates.MainLayout()
+	component.Render(r.Context(), w)
 }
 
 func protectImageHandler(w http.ResponseWriter, r *http.Request) {
@@ -41,50 +79,36 @@ func protectImageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-
-	// file, err := os.Open(imagePath)
-	// if err != nil {
-	// 	http.Error(w, "File not found", http.StatusNotFound)
-	// 	return
-	// }
-	// defer file.Close()
-	http.ServeFile(w, r, tempImageDir+"/"+imageName)
-}
-
-func appHandler(w http.ResponseWriter, r *http.Request) {
-	component := templates.MainLayout()
-	component.Render(r.Context(), w)
+	http.ServeFile(w, r, tempDir+"/"+imageName)
 }
 
 func canAccessImage(ctx context.Context, imageName string) bool {
-	imagesJson := sessionManager.GetString(ctx, "images")
-	if imagesJson == "" {
-		return false
-	}
-	var imageNames []string
-	json.Unmarshal([]byte(imagesJson), &imageNames)
-	for _, name := range imageNames {
-		if name == imageName {
+	images := sessionManager.Get(ctx, "images").([]*ImageData)
+	for _, image := range images {
+		if image.Name == imageName {
 			return true
 		}
 	}
 	return false
 }
 
-func putAllowedImage(ctx context.Context, imageName string) error {
-	imagesJson := sessionManager.GetString(ctx, "images")
-	var imageNames []string
-	if imagesJson != "" {
-		json.Unmarshal([]byte(imagesJson), &imageNames)
+func putAllowedImage(ctx context.Context, image *ImageData) error {
+	images, ok := sessionManager.Get(ctx, "images").([]*ImageData)
+	if !ok {
+		images = []*ImageData{image}
+	} else {
+		images = append(images, image)
 	}
-	imageNames = append(imageNames, imageName)
-
-	updatedImageJson, err := json.Marshal(imageNames)
-	if err != nil {
-		return err
-	}
-	sessionManager.Put(ctx, "images", string(updatedImageJson))
+	sessionManager.Put(ctx, "images", images)
 	return nil
+}
+
+func setCurrentImage(ctx context.Context, image *ImageData) {
+	sessionManager.Put(ctx, "currentImage", *image)
+}
+
+func getCurrentImage(ctx context.Context) ImageData {
+	return sessionManager.Get(ctx, "currentImage").(ImageData)
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -106,21 +130,11 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// buf := bytes.NewBuffer(nil)
-	// if _, err := io.Copy(buf, file); err != nil {
-	// 	http.Error(w, "fail to copy to buffer", http.StatusInternalServerError)
-	// }
-	// imgBase64 := base64.StdEncoding.EncodeToString(buf.Bytes())
-	// contentType := handler.Header.Get("Content-Type")
-	// dataURL := fmt.Sprintf("data:%s;base64,%s", contentType, imgBase64)
-	// templates.Image(dataURL).Render(r.Context(), w)
-	randBytes := make([]byte, 4)
-	rand.Read(randBytes)
-	randFileName := hex.EncodeToString(randBytes) + filepath.Ext(handler.Filename)
-	filePath := filepath.Join(tempImageDir, randFileName)
-	dst, err := os.Create(filePath)
+	image := NewImage(handler.Filename, handler.Header.Get("Content-Type"))
+
+	dst, err := os.Create(image.FilePath)
 	if err != nil {
-		http.Error(w, "unable to save file "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "unable to create file "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer dst.Close()
@@ -136,11 +150,103 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = putAllowedImage(r.Context(), randFileName); err != nil {
+	if err = putAllowedImage(r.Context(), image); err != nil {
 		http.Error(w, "unable to save to session "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	setCurrentImage(r.Context(), image)
 
-	templates.Image("img/"+randFileName).Render(r.Context(), w)
+	templates.Image(image.WebPath).Render(r.Context(), w)
+
+}
+
+func cropHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "expected post", http.StatusMethodNotAllowed)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "error parsing form "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	a, errA := strconv.Atoi(r.FormValue("a"))
+	b, errB := strconv.Atoi(r.FormValue("b"))
+	x, errX := strconv.Atoi(r.FormValue("x"))
+	y, errY := strconv.Atoi(r.FormValue("y"))
+
+	if errA != nil || errB != nil || errX != nil || errY != nil {
+		http.Error(w, "invalid coordinate values", http.StatusBadRequest)
+		return
+	}
+
+	imageData := getCurrentImage(r.Context())
+	file, err := os.Open(imageData.FilePath)
+	if err != nil {
+		http.Error(w, "unable to open image "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	image, _, err := image.Decode(file)
+	if err != nil {
+		http.Error(w, "unable to decode "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	croppedImage := cropImage(image, a, b, x, y)
+
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, croppedImage, nil); err != nil {
+		http.Error(w, "unable to encode image "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	client := gosseract.NewClient()
+	defer client.Close()
+
+	if err := client.SetImageFromBytes(buf.Bytes()); err != nil {
+		http.Error(w, "unable to set image for OCR "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	text, err := client.Text()
+	if err != nil {
+		http.Error(w, "OCR failed "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	imgBase64 := base64.StdEncoding.EncodeToString(buf.Bytes())
+	imgSrc := "data:image/jpeg;base64," + imgBase64
+	templates.TextResult(imgSrc, text).Render(r.Context(), w)
+}
+
+func cropImage(src image.Image, a, b, x, y int) image.Image {
+	rect := image.Rect(a, b, x, y)
+	cropped := image.NewRGBA(rect)
+	draw.Draw(cropped, rect, src, image.Point{a, b}, draw.Src)
+
+	return cropped
+}
+
+type ImageData struct {
+	OriginalName string
+	Name         string
+	ContentType  string
+	FilePath     string
+	WebPath      string
+}
+
+func NewImage(fileName string, contentType string) *ImageData {
+	randBytes := make([]byte, 4)
+	rand.Read(randBytes)
+	name := hex.EncodeToString(randBytes) + filepath.Ext(fileName)
+
+	return &ImageData{
+		OriginalName: fileName,
+		Name:         name,
+		FilePath:     filepath.Join(tempDir, name),
+		WebPath:      "img/" + name,
+		ContentType:  contentType,
+	}
 
 }

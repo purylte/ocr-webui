@@ -1,0 +1,10 @@
+package templates
+
+templ TextResult(imgSrc string, text string) {
+	<div>
+		@Image(imgSrc)
+		<p>
+			{ text }
+		</p>
+	</div>
+}

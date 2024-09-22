@@ -113,7 +113,13 @@ templ MainLayout() {
 					}
 				</style>
 			</form>
-			<form>
+			<div id="response-img">
+				<div>
+					crop your image!
+				</div>
+			</div>
+			<form hx-post="/crop" hx-target="#response-img" hx-swap="innerHTML">
+				<button type="submit">Crop</button>
 				<input type="number" class="pos-input" name="a"/>
 				<input type="number" class="pos-input" name="b"/>
 				<input type="number" class="pos-input" name="x"/>
