@@ -1,0 +1,45 @@
+package templates
+
+templ ClipboardUpload(swapTarget string) {
+@templ.JSONScript("swapTarget", swapTarget)
+<div id="clip-source" hx-post="/upload" hx-encoding="multipart/form-data" hx-trigger="none" hx-swap="innerHTML">
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            document.addEventListener("paste", async function (event) {
+                const items = event.clipboardData.items;
+                let imageBlob = null;
+
+                for (const item of items) {
+                    if (item.type.startsWith("image/")) {
+                        imageBlob = item.getAsFile();
+                        break;
+                    }
+                }
+
+                if (imageBlob) {
+                    handleImageUpload(imageBlob);
+                } else {
+                    alert("No image found in clipboard");
+                }
+            });
+
+            function handleImageUpload(blob) {
+                const swapTarget = JSON.parse(document.getElementById("swapTarget").textContent).slice(1, -1);
+                const clipSource = document.getElementById("clip-source")
+                htmx.ajax('POST',
+                    clipSource.getAttribute('hx-post'), {
+                    values: {
+                        image: blob
+                    },
+                    source: clipSource,
+                    target: swapTarget
+                })
+            }
+        });
+    </script>
+</div>
+
+
+
+}

@@ -21,7 +21,7 @@ templ MainLayout() {
 				column-gap: 1rem;
 			}
 		</style>
-		<button hx-post="/clipboard" hx-target="#img-container" hx-swap="innerHTML">Clipboard</button>
+		@ClipboardUpload("'#img-container'")
 		<form hx-post="/upload" hx-target="#img-container" hx-swap="innerHTML" enctype="multipart/form-data"
 			hx-on::after-request="this.reset()">
 			<input type="file" name="image" accept="image/*" required hx- />
@@ -46,7 +46,7 @@ templ MainLayout() {
 		<canvas></canvas>
 		<div id="img-container">
 			<div id="img">
-				Upload or Paste Your Image!
+				Upload or CTRL+V
 			</div>
 		</div>
 		<style>
