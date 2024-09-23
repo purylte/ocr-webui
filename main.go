@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/gob"
@@ -82,35 +81,6 @@ func protectImageHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, tempDir+"/"+imageName)
 }
 
-func canAccessImage(ctx context.Context, imageName string) bool {
-	images := sessionManager.Get(ctx, "images").([]*ImageData)
-	for _, image := range images {
-		if image.Name == imageName {
-			return true
-		}
-	}
-	return false
-}
-
-func putAllowedImage(ctx context.Context, image *ImageData) error {
-	images, ok := sessionManager.Get(ctx, "images").([]*ImageData)
-	if !ok {
-		images = []*ImageData{image}
-	} else {
-		images = append(images, image)
-	}
-	sessionManager.Put(ctx, "images", images)
-	return nil
-}
-
-func setCurrentImage(ctx context.Context, image *ImageData) {
-	sessionManager.Put(ctx, "currentImage", *image)
-}
-
-func getCurrentImage(ctx context.Context) ImageData {
-	return sessionManager.Get(ctx, "currentImage").(ImageData)
-}
-
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "expected post", http.StatusMethodNotAllowed)
@@ -180,7 +150,11 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageData := getCurrentImage(r.Context())
+	imageData, err := getCurrentImage(r.Context())
+	if err != nil {
+		http.Error(w, "unable to get current image "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	file, err := os.Open(imageData.FilePath)
 	if err != nil {
 		http.Error(w, "unable to open image "+err.Error(), http.StatusInternalServerError)
@@ -204,12 +178,7 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 	client := gosseract.NewClient()
 	defer client.Close()
 
-	if err := client.SetImageFromBytes(buf.Bytes()); err != nil {
-		http.Error(w, "unable to set image for OCR "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	text, err := client.Text()
+	text, err := ocrFromBytes(buf.Bytes())
 	if err != nil {
 		http.Error(w, "OCR failed "+err.Error(), http.StatusInternalServerError)
 		return
@@ -226,6 +195,21 @@ func cropImage(src image.Image, a, b, x, y int) image.Image {
 	draw.Draw(cropped, rect, src, image.Point{a, b}, draw.Src)
 
 	return cropped
+}
+
+func ocrFromBytes(imageByte []byte) (string, error) {
+	client := gosseract.NewClient()
+	defer client.Close()
+
+	if err := client.SetImageFromBytes(imageByte); err != nil {
+		return "", err
+	}
+
+	text, err := client.Text()
+	if err != nil {
+		return "", err
+	}
+	return text, nil
 }
 
 type ImageData struct {

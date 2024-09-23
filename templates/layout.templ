@@ -45,7 +45,9 @@ templ MainLayout() {
 	<div>
 		<canvas></canvas>
 		<div id="img-container">
-			<img id="img" src="https://i.pinimg.com/736x/72/eb/36/72eb365f16469ea0e6093d29e42c5924.jpg" />
+			<div id="img">
+				Upload or Paste Your Image!
+			</div>
 		</div>
 		<style>
 			me {
@@ -74,6 +76,7 @@ templ MainLayout() {
 				canvas.onmousedown = function (e) {
 					clearPosForm()
 					pos.start = getPosition(e)
+					clearTimeout(submitPosFormTimer);
 				}
 				canvas.onmousemove = function (e) {
 					const { x, y } = getPosition(e)
@@ -83,13 +86,20 @@ templ MainLayout() {
 					pos.end = getPosition(e)
 					drawRect(ctx, pos.start.x, pos.start.y, pos.end.x, pos.end.y)
 					fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y)
+					submitPosFormDebounce()
 					clearPos()
 				}
 			}
+
+			let debounceTimer;
+			const debounceDelay = 300;
+
+
 			me("#img-container").on('htmx:afterSettle', function (evt) {
 				calculateCanvasBound()
 				clearPosForm()
 			});
+
 
 
 			const calculateCanvasBound = function (e) {
@@ -126,15 +136,30 @@ templ MainLayout() {
 			}
 		</script>
 	</div>
+	<div id="scan-loading" class="htmx-indicator">
+		...
+	</div>
 
-
-	<form hx-post="/crop" hx-target="#response-img" hx-swap="innerHTML">
-		<button type="submit">Crop</button>
-		<input type="number" class="pos-input" name="a" />
-		<input type="number" class="pos-input" name="b" />
-		<input type="number" class="pos-input" name="x" />
-		<input type="number" class="pos-input" name="y" />
+	<form hx-post="/crop" id="posForm" hx-target="#response-img" hx-swap="innerHTML" hx-indicator="#scan-loading"
+		hidden>
+		<input type="number" class="pos-input" name="a" required />
+		<input type="number" class="pos-input" name="b" required />
+		<input type="number" class="pos-input" name="x" required />
+		<input type="number" class="pos-input" name="y" required />
 		<script>
+			let submitPosFormTimer;
+			const submitPosFormDebounce = function () {
+				submitPosFormTimer = setTimeout(() => {
+					const form = document.getElementById("posForm")
+					htmx.trigger(form, 'submit')
+				}, 300); // 300ms delay
+			}
+			const PosFormIsValid = function () {
+				const inputs = any(".pos-input")
+				const allFilled = inputs.every((inp) => inp.value !== "");
+				console.log(inputs[2].value - inputs[0].value)
+				return allFilled && inputs[2].value - inputs[0].value >= 1 && inputs[3].value - inputs[1].value >= 1
+			}
 			const clearPosForm = function () {
 				const inputs = any(".pos-input")
 				inputs.forEach(i => i.value = "")
@@ -156,7 +181,6 @@ templ MainLayout() {
 	</form>
 	<div id="response-img">
 		<div>
-			crop your image!
 		</div>
 	</div>
 </body>
