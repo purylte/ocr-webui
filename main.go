@@ -10,6 +10,7 @@ import (
 	"image"
 	"image/draw"
 	"image/jpeg"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -17,9 +18,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/alexedwards/scs/v2"
 	"github.com/otiai10/gosseract/v2"
 	"github.com/purylte/ocr-webui/templates"
+	"github.com/purylte/ocr-webui/types"
 
 	_ "image/png"
 )
@@ -30,8 +33,8 @@ var tempDir string
 func main() {
 	sessionManager = scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
-	gob.Register([]*ImageData{})
-	gob.Register(ImageData{})
+	gob.Register([]*types.ImageData{})
+	gob.Register(types.ImageData{})
 
 	var err error
 	tempDir, err = initTempDir()
@@ -68,7 +71,13 @@ func initTempDir() (string, error) {
 }
 
 func appHandler(w http.ResponseWriter, r *http.Request) {
-	component := templates.MainLayout()
+	img, err := getCurrentImage(r.Context())
+	var component templ.Component
+	if err != nil {
+		component = templates.MainLayout(nil)
+	} else {
+		component = templates.MainLayout(img)
+	}
 	component.Render(r.Context(), w)
 }
 
@@ -100,33 +109,39 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	image := NewImage(handler.Filename, handler.Header.Get("Content-Type"))
+	img, _, err := image.Decode(file)
+	if err != nil {
+		http.Error(w, "Unable to decode image: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	bounds := img.Bounds()
+	width, height := bounds.Max.X, bounds.Max.Y
 
+	image := NewImage(handler.Filename, width, height)
+
+	// Reset file pointer to beginning
+	if _, err := file.Seek(0, 0); err != nil {
+		http.Error(w, "Unable to process file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	dst, err := os.Create(image.FilePath)
 	if err != nil {
-		http.Error(w, "unable to create file "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Unable to create file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer dst.Close()
-
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		http.Error(w, "unable to process file "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	_, err = dst.ReadFrom(file)
-	if err != nil {
-		http.Error(w, "unable to save file "+err.Error(), http.StatusInternalServerError)
+	if _, err := io.Copy(dst, file); err != nil {
+		http.Error(w, "Unable to save file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err = putAllowedImage(r.Context(), image); err != nil {
-		http.Error(w, "unable to save to session "+err.Error(), http.StatusInternalServerError)
+	if err := putAllowedImage(r.Context(), image); err != nil {
+		http.Error(w, "Unable to save to session: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	setCurrentImage(r.Context(), image)
-
-	templates.Image(image.WebPath).Render(r.Context(), w)
+	templates.CanvasImage(image).Render(r.Context(), w)
 
 }
 
@@ -212,25 +227,18 @@ func ocrFromBytes(imageByte []byte) (string, error) {
 	return text, nil
 }
 
-type ImageData struct {
-	OriginalName string
-	Name         string
-	ContentType  string
-	FilePath     string
-	WebPath      string
-}
-
-func NewImage(fileName string, contentType string) *ImageData {
+func NewImage(fileName string, width int, height int) *types.ImageData {
 	randBytes := make([]byte, 4)
 	rand.Read(randBytes)
 	name := hex.EncodeToString(randBytes) + filepath.Ext(fileName)
 
-	return &ImageData{
+	return &types.ImageData{
 		OriginalName: fileName,
 		Name:         name,
 		FilePath:     filepath.Join(tempDir, name),
 		WebPath:      "img/" + name,
-		ContentType:  contentType,
+		Width:        width,
+		Height:       height,
 	}
 
 }

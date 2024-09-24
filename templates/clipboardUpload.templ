@@ -1,9 +1,8 @@
 package templates
 
 templ ClipboardUpload(swapTarget string) {
-@templ.JSONScript("swapTarget", swapTarget)
-<div id="clip-source" hx-post="/upload" hx-encoding="multipart/form-data" hx-trigger="none" hx-swap="innerHTML">
-    <script>
+	<div id="clip-source" hx-post="/upload" hx-encoding="multipart/form-data" hx-trigger="none" hx-swap="innerHTML" hx-target={ swapTarget }>
+		<script>
         document.addEventListener("DOMContentLoaded", function () {
 
             document.addEventListener("paste", async function (event) {
@@ -25,21 +24,17 @@ templ ClipboardUpload(swapTarget string) {
             });
 
             function handleImageUpload(blob) {
-                const swapTarget = JSON.parse(document.getElementById("swapTarget").textContent).slice(1, -1);
                 const clipSource = document.getElementById("clip-source")
                 htmx.ajax('POST',
                     clipSource.getAttribute('hx-post'), {
+                    target: clipSource.getAttribute("hx-target"),
                     values: {
                         image: blob
                     },
                     source: clipSource,
-                    target: swapTarget
                 })
             }
         });
     </script>
-</div>
-
-
-
+	</div>
 }

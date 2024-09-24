@@ -1,0 +1,55 @@
+package templates
+
+templ PositionForm(swapTarget string) {
+	<form
+		hx-post="/crop"
+		id="posForm"
+		hx-target={ swapTarget }
+		hx-swap="innerHTML"
+		hidden
+	>
+		<input type="number" class="pos-input" name="a" required/>
+		<input type="number" class="pos-input" name="b" required/>
+		<input type="number" class="pos-input" name="x" required/>
+		<input type="number" class="pos-input" name="y" required/>
+		<input type="number" class="pos-input" name="width" required/>
+		<input type="number" class="pos-input" name="heigth" required/>
+		<script>
+        let submitPosFormTimer;
+        const clearPosFormDebounce = function() {
+            clearTimeout(submitPosFormTimer)
+        }
+        const submitPosFormDebounce = function () {
+            submitPosFormTimer = setTimeout(() => {
+                const form = document.getElementById("posForm")
+                htmx.trigger(form, 'submit')
+            }, 300); // 300ms delay
+        }
+        const PosFormIsValid = function () {
+            const inputs = any(".pos-input")
+            const allFilled = inputs.every((inp) => inp.value !== "");
+            console.log(inputs[2].value - inputs[0].value)
+            return allFilled && inputs[2].value - inputs[0].value >= 1 && inputs[3].value - inputs[1].value >= 1
+        }
+        const clearPosForm = function () {
+            const inputs = any(".pos-input")
+            inputs.forEach(i => i.value = "")
+        }
+        const fillPosForm = function (a, b, x, y, width, heigth) {
+            const inputs = any(".pos-input")
+            if (a > x) {
+                [a, x] = [x, a]
+            }
+            if (b > y) {
+                [b, y] = [y, b]
+            }
+            inputs[0].value = a
+            inputs[1].value = b
+            inputs[2].value = x
+            inputs[3].value = y
+            inputs[4].value = width
+            inputs[5].value = heigth
+        }
+    </script>
+	</form>
+}

@@ -8,7 +8,9 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func MainLayout() templ.Component {
+import "github.com/purylte/ocr-webui/types"
+
+func MainLayout(imageData *types.ImageData) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,15 +31,31 @@ func MainLayout() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><script src=\"https://unpkg.com/htmx.org@2.0.2\"></script><script src=\"https://cdn.jsdelivr.net/gh/gnat/css-scope-inline/script.js\"></script><script src=\"https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js\"></script><title>OCR Web UI</title></head><body><div><style>\n\t\t\tme {\n\t\t\t\tdisplay: flex;\n\t\t\t\tcolumn-gap: 1rem;\n\t\t\t}\n\t\t</style>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><script src=\"https://unpkg.com/htmx.org@2.0.2\"></script><script src=\"https://cdn.jsdelivr.net/gh/gnat/css-scope-inline/script.js\"></script><script src=\"https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js\"></script><title>OCR Web UI</title></head><body>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ClipboardUpload("'#img-container'").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = ClipboardUpload("#canvas-image").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<form hx-post=\"/upload\" hx-target=\"#img-container\" hx-swap=\"innerHTML\" enctype=\"multipart/form-data\" hx-on::after-request=\"this.reset()\"><input type=\"file\" name=\"image\" accept=\"image/*\" required hx-> <button type=\"submit\" class=\"upload-button\">Upload</button><div class=\"loading-indicator\">Loading...</div><style>\n\t\t\t\t.loading-indicator {\n\t\t\t\t\tdisplay: none;\n\t\t\t\t}\n\n\t\t\t\t.htmx-request .loading-indicator {\n\t\t\t\t\tdisplay: inline;\n\t\t\t\t}\n\n\t\t\t\t.htmx-request .upload-button {\n\t\t\t\t\tdisplay: none;\n\t\t\t\t}\n\t\t\t</style></form></div><div><canvas></canvas><div id=\"img-container\"><div id=\"img\">Upload or CTRL+V</div></div><style>\n\t\t\tme {\n\t\t\t\tbackground: red;\n\t\t\t}\n\n\t\t\tme img {\n\t\t\t\tz-index: 0;\n\t\t\t\tposition: relative;\n\t\t\t}\n\n\t\t\tme canvas {\n\t\t\t\tz-index: 20;\n\t\t\t\tposition: absolute;\n\t\t\t}\n\t\t</style><script>\n\t\t\tconst pos = { start: { x: null, y: null }, end: { x: null, y: null } }\n\t\t\tlet canvas;\n\t\t\tlet ctx;\n\t\t\twindow.onload = (e) => {\n\t\t\t\tcanvas = me(\"canvas\")\n\t\t\t\tctx = canvas.getContext(\"2d\")\n\t\t\t\tcalculateCanvasBound()\n\n\t\t\t\tcanvas.onmousedown = function (e) {\n\t\t\t\t\tclearPosForm()\n\t\t\t\t\tpos.start = getPosition(e)\n\t\t\t\t\tclearTimeout(submitPosFormTimer);\n\t\t\t\t}\n\t\t\t\tcanvas.onmousemove = function (e) {\n\t\t\t\t\tconst { x, y } = getPosition(e)\n\t\t\t\t\tdrawRect(ctx, pos.start.x, pos.start.y, x, y)\n\t\t\t\t}\n\t\t\t\tcanvas.onmouseup = function (e) {\n\t\t\t\t\tpos.end = getPosition(e)\n\t\t\t\t\tdrawRect(ctx, pos.start.x, pos.start.y, pos.end.x, pos.end.y)\n\t\t\t\t\tfillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y)\n\t\t\t\t\tsubmitPosFormDebounce()\n\t\t\t\t\tclearPos()\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tlet debounceTimer;\n\t\t\tconst debounceDelay = 300;\n\n\n\t\t\tme(\"#img-container\").on('htmx:afterSettle', function (evt) {\n\t\t\t\tcalculateCanvasBound()\n\t\t\t\tclearPosForm()\n\t\t\t});\n\n\n\n\t\t\tconst calculateCanvasBound = function (e) {\n\t\t\t\tconst img = document.getElementById(\"img\")\n\t\t\t\tcanvas.width = img.width\n\t\t\t\tcanvas.height = img.height\n\t\t\t}\n\n\t\t\tconst clearPos = function () {\n\t\t\t\tpos.start.x = null\n\t\t\t\tpos.start.y = null\n\t\t\t\tpos.end.x = null\n\t\t\t\tpos.end.y = null\n\t\t\t}\n\n\t\t\tconst getPosition = function (e) {\n\t\t\t\tconst rect = e.target.getBoundingClientRect();\n\t\t\t\tconst x = Math.round(e.clientX - rect.left);\n\t\t\t\tconst y = Math.round(e.clientY - rect.top);\n\t\t\t\treturn { x: x, y: y }\n\t\t\t}\n\n\t\t\tconst drawRect = function (ctx, a, b, x, y) {\n\t\t\t\tif (a !== null && b !== null && x !== null && y !== null) {\n\t\t\t\t\tif (a > x) {\n\t\t\t\t\t\t[a, x] = [x, a]\n\t\t\t\t\t}\n\t\t\t\t\tif (b > y) {\n\t\t\t\t\t\t[b, y] = [y, b]\n\t\t\t\t\t}\n\t\t\t\t\tctx.clearRect(0, 0, canvas.width, canvas.height);\n\t\t\t\t\tctx.strokeRect(a, b, x - a, y - b)\n\t\t\t\t}\n\t\t\t}\n\t\t</script></div><div id=\"scan-loading\" class=\"htmx-indicator\">...</div><form hx-post=\"/crop\" id=\"posForm\" hx-target=\"#response-img\" hx-swap=\"innerHTML\" hx-indicator=\"#scan-loading\" hidden><input type=\"number\" class=\"pos-input\" name=\"a\" required> <input type=\"number\" class=\"pos-input\" name=\"b\" required> <input type=\"number\" class=\"pos-input\" name=\"x\" required> <input type=\"number\" class=\"pos-input\" name=\"y\" required><script>\n\t\t\tlet submitPosFormTimer;\n\t\t\tconst submitPosFormDebounce = function () {\n\t\t\t\tsubmitPosFormTimer = setTimeout(() => {\n\t\t\t\t\tconst form = document.getElementById(\"posForm\")\n\t\t\t\t\thtmx.trigger(form, 'submit')\n\t\t\t\t}, 300); // 300ms delay\n\t\t\t}\n\t\t\tconst PosFormIsValid = function () {\n\t\t\t\tconst inputs = any(\".pos-input\")\n\t\t\t\tconst allFilled = inputs.every((inp) => inp.value !== \"\");\n\t\t\t\tconsole.log(inputs[2].value - inputs[0].value)\n\t\t\t\treturn allFilled && inputs[2].value - inputs[0].value >= 1 && inputs[3].value - inputs[1].value >= 1\n\t\t\t}\n\t\t\tconst clearPosForm = function () {\n\t\t\t\tconst inputs = any(\".pos-input\")\n\t\t\t\tinputs.forEach(i => i.value = \"\")\n\t\t\t}\n\t\t\tconst fillPosForm = function (a, b, x, y) {\n\t\t\t\tconst inputs = any(\".pos-input\")\n\t\t\t\tif (a > x) {\n\t\t\t\t\t[a, x] = [x, a]\n\t\t\t\t}\n\t\t\t\tif (b > y) {\n\t\t\t\t\t[b, y] = [y, b]\n\t\t\t\t}\n\t\t\t\tinputs[0].value = a\n\t\t\t\tinputs[1].value = b\n\t\t\t\tinputs[2].value = x\n\t\t\t\tinputs[3].value = y\n\t\t\t}\n\t\t</script></form><div id=\"response-img\"><div></div></div></body></html>")
+		templ_7745c5c3_Err = PositionForm("#response-img").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div><div n1>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = Upload("#canvas-image").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = CanvasImageContainer("canvas-image", imageData).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<style>\n\t\t\t\t\t\tme {\n\t\t\t\t\t\t\tdisplay: flex;\n\t\t\t\t\t\t\tflex-flow: column;\n\t\t\t\t\t\t\theight: 100%;\n\t\t\t\t\t\t\trow-gap: 0.5rem;\n\t\t\t\t\t\t}\n\t\t\t\t\t</style></div><div n2 id=\"response-img\"><div></div></div><style>\n\t\t\t\t\tme {\n\t\t\t\t\t\tdisplay: flex;\n\t\t\t\t\t\theight: 100%;\n\t\t\t\t\t}\n\t\t\t\t\tme div[n1]{\n\t\t\t\t\t\twidth: 75%;\n\t\t\t\t\t}\n\t\t\t\t\tme div[n2] {\n\t\t\t\t\t\twidth: 25%;\n\t\t\t\t\t\tpadding: 0 0 0 1rem;\n\t\t\t\t\t}\n\t\t\t\t</style></div><style>\n\t\t\t\tme {\n\t\t\t\t\theight: calc(100vh - 1rem);\n  \t\t\t\t\tmargin: 0;\n\t\t\t\t\tpadding: 0.5rem;\n\t\t\t\t}\n\t\t\t</style></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+
+	"github.com/purylte/ocr-webui/types"
 )
 
 func canAccessImage(ctx context.Context, imageName string) bool {
-	images := sessionManager.Get(ctx, "images").([]*ImageData)
+	images := sessionManager.Get(ctx, "images").([]*types.ImageData)
 	for _, image := range images {
 		if image.Name == imageName {
 			return true
@@ -15,10 +17,10 @@ func canAccessImage(ctx context.Context, imageName string) bool {
 	return false
 }
 
-func putAllowedImage(ctx context.Context, image *ImageData) error {
-	images, ok := sessionManager.Get(ctx, "images").([]*ImageData)
+func putAllowedImage(ctx context.Context, image *types.ImageData) error {
+	images, ok := sessionManager.Get(ctx, "images").([]*types.ImageData)
 	if !ok {
-		images = []*ImageData{image}
+		images = []*types.ImageData{image}
 	} else {
 		images = append(images, image)
 	}
@@ -26,12 +28,12 @@ func putAllowedImage(ctx context.Context, image *ImageData) error {
 	return nil
 }
 
-func setCurrentImage(ctx context.Context, image *ImageData) {
+func setCurrentImage(ctx context.Context, image *types.ImageData) {
 	sessionManager.Put(ctx, "currentImage", *image)
 }
 
-func getCurrentImage(ctx context.Context) (*ImageData, error) {
-	val, ok := sessionManager.Get(ctx, "currentImage").(ImageData)
+func getCurrentImage(ctx context.Context) (*types.ImageData, error) {
+	val, ok := sessionManager.Get(ctx, "currentImage").(types.ImageData)
 	if !ok {
 		return nil, errors.New("type assertion to ImageData failed")
 	}
