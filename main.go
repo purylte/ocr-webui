@@ -155,13 +155,15 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, errA := strconv.Atoi(r.FormValue("a"))
-	b, errB := strconv.Atoi(r.FormValue("b"))
-	x, errX := strconv.Atoi(r.FormValue("x"))
-	y, errY := strconv.Atoi(r.FormValue("y"))
+	ao, errA := strconv.Atoi(r.FormValue("a"))
+	bo, errB := strconv.Atoi(r.FormValue("b"))
+	xo, errX := strconv.Atoi(r.FormValue("x"))
+	yo, errY := strconv.Atoi(r.FormValue("y"))
+	width, errW := strconv.Atoi(r.FormValue("width"))
+	height, errH := strconv.Atoi(r.FormValue("height"))
 
-	if errA != nil || errB != nil || errX != nil || errY != nil {
-		http.Error(w, "invalid coordinate values", http.StatusBadRequest)
+	if errA != nil || errB != nil || errX != nil || errY != nil || errW != nil || errH != nil {
+		http.Error(w, "invalid form values", http.StatusBadRequest)
 		return
 	}
 
@@ -177,12 +179,16 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	image, _, err := image.Decode(file)
+	img, _, err := image.Decode(file)
 	if err != nil {
 		http.Error(w, "unable to decode "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	croppedImage := cropImage(image, a, b, x, y)
+	points := unscalePoints(width, height, imageData.Width, imageData.Height, []image.Point{
+		{X: ao, Y: bo},
+		{X: xo, Y: yo},
+	})
+	croppedImage := cropImage(img, *points[0], *points[1])
 
 	var buf bytes.Buffer
 	if err := jpeg.Encode(&buf, croppedImage, nil); err != nil {
@@ -204,10 +210,24 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 	templates.TextResult(imgSrc, text).Render(r.Context(), w)
 }
 
-func cropImage(src image.Image, a, b, x, y int) image.Image {
-	rect := image.Rect(a, b, x, y)
+func unscalePoints(width int, height int, originalWidth int, originalHeight int, points []image.Point) []*image.Point {
+	xScale := float64(originalWidth) / float64(width)
+	yScale := float64(originalHeight) / float64(height)
+	res := make([]*image.Point, len(points))
+
+	for i, p := range points {
+		res[i] = &image.Point{
+			int(float64(p.X) * xScale),
+			int(float64(p.Y) * yScale),
+		}
+	}
+	return res
+}
+
+func cropImage(src image.Image, a, b image.Point) image.Image {
+	rect := image.Rect(a.X, a.Y, b.X, b.Y)
 	cropped := image.NewRGBA(rect)
-	draw.Draw(cropped, rect, src, image.Point{a, b}, draw.Src)
+	draw.Draw(cropped, rect, src, image.Point{a.X, a.Y}, draw.Src)
 
 	return cropped
 }

@@ -13,7 +13,7 @@ templ PositionForm(swapTarget string) {
 		<input type="number" class="pos-input" name="x" required/>
 		<input type="number" class="pos-input" name="y" required/>
 		<input type="number" class="pos-input" name="width" required/>
-		<input type="number" class="pos-input" name="heigth" required/>
+		<input type="number" class="pos-input" name="height" required/>
 		<script>
         let submitPosFormTimer;
         const clearPosFormDebounce = function() {
@@ -35,7 +35,7 @@ templ PositionForm(swapTarget string) {
             const inputs = any(".pos-input")
             inputs.forEach(i => i.value = "")
         }
-        const fillPosForm = function (a, b, x, y, width, heigth) {
+        const fillPosForm = function (a, b, x, y, width, height) {
             const inputs = any(".pos-input")
             if (a > x) {
                 [a, x] = [x, a]
@@ -48,7 +48,7 @@ templ PositionForm(swapTarget string) {
             inputs[2].value = x
             inputs[3].value = y
             inputs[4].value = width
-            inputs[5].value = heigth
+            inputs[5].value = height
         }
     </script>
 	</form>

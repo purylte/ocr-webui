@@ -29,14 +29,14 @@ func ClipboardUpload(swapTarget string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"clip-source\" hx-post=\"/upload\" hx-encoding=\"multipart/form-data\" hx-trigger=\"none\" hx-swap=\"innerHTML\" hx-target=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"clip-source\" hx-post=\"/upload\" hx-encoding=\"multipart/form-data\" hx-swap=\"innerHTML\" hx-target=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(swapTarget)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/clipboardUpload.templ`, Line: 4, Col: 135}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/clipboardUpload.templ`, Line: 4, Col: 117}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {

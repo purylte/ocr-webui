@@ -29,9 +29,7 @@ templ MainLayout(imageData *types.ImageData) {
 						}
 					</style>
 				</div>
-				<div n2 id="response-img">
-					<div></div>
-				</div>
+				<div n2 id="response-img"></div>
 				<style>
 					me {
 						display: flex;
@@ -43,6 +41,8 @@ templ MainLayout(imageData *types.ImageData) {
 					me div[n2] {
 						width: 25%;
 						padding: 0 0 0 1rem;
+						display: flex;
+						flex-flow: column;
 					}
 				</style>
 			</div>

@@ -1,10 +1,38 @@
 package templates
 
+var styleHandler = templ.NewOnceHandle()
+
 templ TextResult(imgSrc string, text string) {
 	<div>
-		@Image(imgSrc)
+		<div>
+			<img src={ imgSrc }/>
+		</div>
 		<p>
 			{ text }
 		</p>
+		@styleHandler.Once() {
+			<style>
+			me {
+				width: 100%;
+				height: 15%;
+				display: flex;
+				flex-direction: column;
+			}
+			me div {
+				flex: 0 1 auto;
+				width: 100%;
+				height: 100%;
+			}
+			me div img {
+				width: 100%;
+				height: 100%;
+				object-fit: scale-down;
+			}
+			me p {
+				flex: 1 1 auto;
+				margin: 0;
+			}
+		</style>
+		}
 	</div>
 }

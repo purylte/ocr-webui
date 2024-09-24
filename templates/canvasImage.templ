@@ -80,7 +80,7 @@ templ CanvasImageContainer(containerId string, imageData *types.ImageData) {
                 canvas.height = height
             }
 
-            me("div", me()).on('htmx:afterSwap', function (evt) {
+            me("div", me()).on('htmx:afterSettle', function (evt) {
                 calculateCanvasSize()
             })
 </script>
