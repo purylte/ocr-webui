@@ -5,7 +5,7 @@ templ PositionForm(swapTarget string) {
 		hx-post="/crop"
 		id="posForm"
 		hx-target={ swapTarget }
-		hx-swap="innerHTML"
+		hx-swap="afterbegin"
 		hidden
 	>
 		<input type="number" class="pos-input" name="a" required/>
