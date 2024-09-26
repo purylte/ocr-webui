@@ -21,6 +21,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/alexedwards/scs/v2"
 	"github.com/otiai10/gosseract/v2"
+	"github.com/purylte/ocr-webui/cleaner"
 	"github.com/purylte/ocr-webui/services"
 	"github.com/purylte/ocr-webui/stores"
 	"github.com/purylte/ocr-webui/templates"
@@ -36,20 +37,29 @@ var ocrService *services.OCRService
 var tempDir string
 
 func main() {
-	sessionManager := scs.New()
-	sessionManager.Lifetime = 24 * time.Hour
-	imageService = services.NewImageService(*sessionManager)
-	sessionService = services.NewSessionService(*sessionManager)
-	ocrService = services.NewOCRService(stores.NewOCRClientStore())
-
 	gob.Register([]*types.ImageData{})
 	gob.Register(types.ImageData{})
+
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 24 * time.Hour
+	sessionManager.IdleTimeout = 20 * time.Minute
+
+	sessionService = services.NewSessionService(*sessionManager)
+
+	imageService = services.NewImageService(*sessionManager)
+
+	ocrClientStore := stores.NewOCRClientStore()
+	ocrService = services.NewOCRService(ocrClientStore)
+	cleaner.NewOCRClientCleaner(ocrClientStore, 5*time.Minute, 30*time.Minute).Start()
 
 	var err error
 	tempDir, err = initTempDir()
 	if err != nil {
 		log.Fatalf("cannot create temp image dir: %v", err)
 	}
+
+	imgCleaner := cleaner.NewFSCleaner(tempDir, 20*time.Minute, 1*time.Hour)
+	imgCleaner.Start()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/img/", protectImageHandler)
@@ -246,7 +256,7 @@ func cropImage(src image.Image, a, b image.Point) image.Image {
 }
 
 func NewImage(fileName string, width int, height int) *types.ImageData {
-	randBytes := make([]byte, 4)
+	randBytes := make([]byte, 8)
 	rand.Read(randBytes)
 	name := hex.EncodeToString(randBytes) + filepath.Ext(fileName)
 

@@ -2,6 +2,7 @@ package types
 
 import (
 	"sync"
+	"time"
 
 	"github.com/otiai10/gosseract/v2"
 )
@@ -12,6 +13,7 @@ type TessOption struct {
 }
 
 type OCRClient struct {
-	Client *gosseract.Client
-	Mutex  sync.Mutex
+	Client       *gosseract.Client
+	Mutex        sync.Mutex
+	LastAccessed time.Time
 }
