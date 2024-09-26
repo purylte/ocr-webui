@@ -43,7 +43,7 @@ func MainLayout(imageData *types.ImageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div><div n1>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div><div n1><div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -51,11 +51,23 @@ func MainLayout(imageData *types.ImageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		templ_7745c5c3_Err = LangForm("eng", "jpn-best").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = PCMForm("0", "1").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = CanvasImageContainer("canvas-image", imageData).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><div n2 id=\"response-img\"></div><style>\n\t\t\t\t\tme {\n\t\t\t\t\t\tdisplay: flex;\n\t\t\t\t\t\theight: 100%;\n\t\t\t\t\t\tcolumn-gap: 0.5rem;\n\t\t\t\t\t\toverflow-y: auto;\n\t\t\t\t\t}\n\t\t\t\t\tme div[n1]{\n\t\t\t\t\t\twidth: 75%;\n\t\t\t\t\t\tdisplay: flex;\n\t\t\t\t\t\tflex-flow: column;\n\t\t\t\t\t\theight: 100%;\n\t\t\t\t\t\trow-gap: 0.5rem;\n\t\t\t\t\t}\n\t\t\t\t\tme div[n2] {\n\t\t\t\t\t\tmax-height: 100%;\n\t\t\t\t\t\twidth: 25%;\n\t\t\t\t\t\tdisplay: flex;\n\t\t\t\t\t\tflex-flow: column;\n\t\t\t\t\t\trow-gap: 1rem;\n\t\t\t\t\t\toverflow-y: auto;\n\t\t\t\t\t}\n\t\t\t\t</style></div><style>\n\t\t\t\tme {\n\t\t\t\t\theight: calc(100vh - 1rem);\n  \t\t\t\t\tmargin: 0;\n\t\t\t\t\tpadding: 0.5rem;\n\t\t\t\t\toverflow-y: hidden;\n\t\t\t\t}\n\t\t\t</style></body></html>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><div n2 id=\"response-img\"></div><style>\n\t\t\tme {\n\t\t\t\tdisplay: flex;\n\t\t\t\theight: 100%;\n\t\t\t\tcolumn-gap: 0.5rem;\n\t\t\t\toverflow-y: auto;\n\t\t\t}\n\n\t\t\tme div[n1] {\n\t\t\t\twidth: 75%;\n\t\t\t\tdisplay: flex;\n\t\t\t\tflex-flow: column;\n\t\t\t\theight: 100%;\n\t\t\t\trow-gap: 0.5rem;\n\t\t\t}\n\n\t\t\tme div[n2] {\n\t\t\t\tmax-height: 100%;\n\t\t\t\twidth: 25%;\n\t\t\t\tdisplay: flex;\n\t\t\t\tflex-flow: column;\n\t\t\t\trow-gap: 1rem;\n\t\t\t\toverflow-y: auto;\n\t\t\t}\n\t\t</style></div><style>\n\t\tme {\n\t\t\theight: calc(100vh - 1rem);\n\t\t\tmargin: 0;\n\t\t\tpadding: 0.5rem;\n\t\t\toverflow-y: hidden;\n\t\t}\n\t</style></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -1,0 +1,62 @@
+package templates
+
+templ LangForm(langs ...string) {
+
+<div>
+  <button>Languages
+    <script>
+      me().on('click', ev => {
+        const content = document.getElementById("contentLang")
+        content.style.display = content.style.display === "flex" ? "none" : "flex";
+      })
+    </script>
+  </button>
+  <div id="contentLang">
+    for _, lang := range langs {
+    <label><input type="checkbox" class="checkboxLang" name={lang} onchange="handleCheckboxChange()"> {lang}</label>
+    }
+  </div>
+  <style>
+    #contentLang {
+      display: none;
+      flex-direction: column;
+    }
+  </style>
+  <script>
+    let debounceTimeout;
+
+    function handleCheckboxChange() {
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        const selectedOptions = getSelectedOptions();
+        if (selectedOptions.length > 0) {
+          htmx.ajax('POST', '/set-langs', {
+            values: { options: selectedOptions }
+          });
+        }
+      }, 300); // 300 ms debounce delay
+    }
+
+    function getSelectedOptions() {
+      const checkboxes = document.querySelectorAll('.checkboxLang');
+      const selectedOptions = [];
+      checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+          selectedOptions.push(checkbox.name);
+        }
+      });
+      return selectedOptions
+    }
+  </script>
+</div>
+}
+
+templ PCMForm(pcms ...string) {
+<label> PCM Mode
+  <select name="pcm" hx-post="/set-pcm">
+    for _, pcm := range pcms {
+    <option value={pcm}>{ pcm }</option>
+    }
+  </select>
+</label>
+}

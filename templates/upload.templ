@@ -1,31 +1,27 @@
 package templates
 
 templ Upload(swapTarget string) {
-	<form
-		hx-post="/upload"
-		hx-target={ swapTarget }
-		hx-swap="innerHTML"
-		enctype="multipart/form-data"
-		hx-on::after-request="this.reset()"
-	>
-		<input type="file" name="image" accept="image/*" required hx-/>
-		<button type="submit" class="upload-button">Upload</button>
-		<div class="loading-indicator">Loading...</div>
-		<style>
+<form hx-post="/upload" hx-target={ swapTarget } hx-swap="innerHTML" enctype="multipart/form-data"
+	hx-on::after-request="this.reset()">
+	<input type="file" name="image" accept="image/*" required hx- />
+	<button type="submit" class="upload-button">Upload</button>
+	<div class="loading-indicator">Loading...</div>
+	<style>
 		me {
 			flex: 0 1 auto;
 		}
-        .loading-indicator {
-            display: none;
-        }
 
-        .htmx-request .loading-indicator {
-            display: inline;
-        }
+		.loading-indicator {
+			display: none;
+		}
 
-        .htmx-request .upload-button {
-            display: none;
-        }
-    	</style>
-	</form>
+		.htmx-request .loading-indicator {
+			display: inline;
+		}
+
+		.htmx-request .upload-button {
+			display: none;
+		}
+	</style>
+</form>
 }

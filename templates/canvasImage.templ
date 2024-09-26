@@ -3,140 +3,146 @@ package templates
 import "github.com/purylte/ocr-webui/types"
 
 templ CanvasImageContainer(containerId string, imageData *types.ImageData) {
-	<div>
-		<div id={ containerId }>
-			@CanvasImage(imageData)
-		</div>
-		<style>
-            me {
-                flex: 1 1 auto;
-                align-items: center;
-                justify-content: center;
-                display: flex; 
-            }
-            me div {
-                background: red;
-                height: 100%;
-                width: 100%;
-                align-items: center;
-                justify-content: center;
-                display: flex; 
-            }
-        </style>
-		<script>
-            const pos = { start: { x: null, y: null }, end: { x: null, y: null } }
+<div>
+    <div id={ containerId }>
+        @CanvasImage(imageData)
+    </div>
+    <style>
+        me {
+            flex: 0 1 auto;
+            background-color: red;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            display: flex;
+        }
 
-            const clearPos = function () {
-                pos.start.x = null
-                pos.start.y = null
-                pos.end.x = null
-                pos.end.y = null
-            }
+        me div {
+            align-items: center;
+            justify-content: center;
+            display: flex;
+        }
+    </style>
+    <script>
+        const pos = { start: { x: null, y: null }, end: { x: null, y: null } }
 
-            const getPosition = function (e) {
-                const rect = e.target.getBoundingClientRect();
-                const x = Math.round(e.clientX - rect.left);
-                const y = Math.round(e.clientY - rect.top);
-                return { x: x, y: y }
-            }
+        const clearPos = function () {
+            pos.start.x = null
+            pos.start.y = null
+            pos.end.x = null
+            pos.end.y = null
+        }
 
-            const drawRect = function (ctx, a, b, x, y) {
-                if (a !== null && b !== null && x !== null && y !== null) {
-                    if (a > x) {
-                        [a, x] = [x, a]
-                    }
-                    if (b > y) {
-                        [b, y] = [y, b]
-                    }
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.strokeRect(a, b, x - a, y - b)
+        const getPosition = function (e) {
+            const rect = e.target.getBoundingClientRect();
+            const x = Math.round(e.clientX - rect.left);
+            const y = Math.round(e.clientY - rect.top);
+            return { x: x, y: y }
+        }
+
+        const drawRect = function (ctx, a, b, x, y) {
+            if (a !== null && b !== null && x !== null && y !== null) {
+                if (a > x) {
+                    [a, x] = [x, a]
                 }
-            }
-
-            const getMaxSize = function (width, height, maxWidth, maxHeight) {
-                if (width > maxWidth) {
-                    height = Math.floor((maxWidth / width) * height);
-                    width = maxWidth;
+                if (b > y) {
+                    [b, y] = [y, b]
                 }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeRect(a, b, x - a, y - b)
+            }
+        }
 
-                else if (height > maxHeight) {
-                    width = Math.floor((maxHeight / height) * width);
-                    height = maxHeight;
+        const getMaxSize = function (width, height, maxWidth, maxHeight) {
+            const aspectRatio = width / height;
+            let newWidth, newHeight;
+
+            if (width > maxWidth || height > maxHeight) {
+                if (maxWidth / aspectRatio <= maxHeight) {
+                    newWidth = maxWidth;
+                    newHeight = maxWidth / aspectRatio;
+                } else {
+                    newHeight = maxHeight;
+                    newWidth = maxHeight * aspectRatio;
                 }
-
-                return { width, height }
+            } else {
+                newWidth = width;
+                newHeight = height;
             }
 
-            const calculateCanvasSize = function() {
-                const canvas = document.getElementById("canvas")
-                const img = canvas.nextElementSibling
-                const parentRect = canvas.parentElement.getBoundingClientRect()
-                const originalWidth = JSON.parse(document.getElementById('originalWidth').textContent);
-                const originalHeight = JSON.parse(document.getElementById('originalHeight').textContent);
-                const {width, height} = getMaxSize(originalWidth, originalHeight, parentRect.width, parentRect.height)
-                img.width = width
-                img.height = height
-                canvas.width = width
-                canvas.height = height
-            }
+            return {
+                width: newWidth,
+                height: newHeight
+            };
+        }
 
-            me("div", me()).on('htmx:afterSettle', function (evt) {
-                calculateCanvasSize()
-            })
-</script>
-	</div>
+        const calculateCanvasSize = function () {
+            const canvas = document.getElementById("canvas")
+            const img = canvas.nextElementSibling
+            const parentRect = canvas.parentElement.parentElement.getBoundingClientRect()
+            console.log(parentRect.height)
+            const originalWidth = JSON.parse(document.getElementById('originalWidth').textContent);
+            const originalHeight = JSON.parse(document.getElementById('originalHeight').textContent);
+            const { width, height } = getMaxSize(originalWidth, originalHeight, parentRect.width, parentRect.height)
+            img.width = width
+            img.height = height
+            canvas.width = width
+            canvas.height = height
+        }
+
+        me("div", me()).on('htmx:afterSettle', function (evt) {
+            calculateCanvasSize()
+        })
+    </script>
+</div>
 }
 
 templ CanvasImage(imageData *types.ImageData) {
-	if imageData == nil {
-		Upload or CTRL+V
-		<style>
+if imageData == nil {
+Upload or CTRL+V
+<style>
 </style>
-	} else {
-		@templ.JSONScript("originalWidth", imageData.Width)
-		@templ.JSONScript("originalHeight", imageData.Height)
-		<canvas
-			id="canvas"
-		>
-			<script>
-            me().on('mousedown', e => {
-                clearPosForm()
-                pos.start = getPosition(e)
-                clearPosFormDebounce()
-            })
-            me().on('mousemove', e => {
-                const { x, y } = getPosition(e)
-                const canvas = document.getElementById("canvas")
-                drawRect(canvas.getContext("2d"),pos.start.x, pos.start.y, x, y)
-            })
-            me().on('mouseup', e => {
-                pos.end = getPosition(e)
-                const canvas = document.getElementById("canvas")
-                drawRect(canvas.getContext("2d"), pos.start.x, pos.start.y, pos.end.x, pos.end.y)
-                fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y, canvas.width, canvas.height)
-                submitPosFormDebounce()
-                clearPos()
-            })
-        </script>
-		</canvas>
-		<img
-			src={ imageData.WebPath }
-		/>
-		<script>
-        onloadAdd(_ => {
-            calculateCanvasSize()
+} else {
+@templ.JSONScript("originalWidth", imageData.Width)
+@templ.JSONScript("originalHeight", imageData.Height)
+<canvas id="canvas">
+    <script>
+        me().on('mousedown', e => {
+            clearPosForm()
+            pos.start = getPosition(e)
+            clearPosFormDebounce()
         })
-        </script>
-		<style>
-            me img {
-                z-index: 0;
-                position: relative;
-            }
+        me().on('mousemove', e => {
+            const { x, y } = getPosition(e)
+            const canvas = document.getElementById("canvas")
+            drawRect(canvas.getContext("2d"), pos.start.x, pos.start.y, x, y)
+        })
+        me().on('mouseup', e => {
+            pos.end = getPosition(e)
+            const canvas = document.getElementById("canvas")
+            drawRect(canvas.getContext("2d"), pos.start.x, pos.start.y, pos.end.x, pos.end.y)
+            fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y, canvas.width, canvas.height)
+            submitPosFormDebounce()
+            clearPos()
+        })
+    </script>
+</canvas>
+<img src={ imageData.WebPath } />
+<script>
+    onloadAdd(_ => {
+        calculateCanvasSize()
+    })
+</script>
+<style>
+    me img {
+        z-index: 0;
+        position: relative;
+    }
 
-            me canvas {
-                z-index: 20;
-                position: absolute;
-            }
-        </style>
-	}
+    me canvas {
+        z-index: 20;
+        position: absolute;
+    }
+</style>
+}
 }

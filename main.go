@@ -21,18 +21,27 @@ import (
 	"github.com/a-h/templ"
 	"github.com/alexedwards/scs/v2"
 	"github.com/otiai10/gosseract/v2"
+	"github.com/purylte/ocr-webui/services"
+	"github.com/purylte/ocr-webui/stores"
 	"github.com/purylte/ocr-webui/templates"
 	"github.com/purylte/ocr-webui/types"
 
 	_ "image/png"
 )
 
-var sessionManager *scs.SessionManager
+var imageService *services.ImageService
+var sessionService *services.SessionService
+var ocrService *services.OCRService
+
 var tempDir string
 
 func main() {
-	sessionManager = scs.New()
+	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
+	imageService = services.NewImageService(*sessionManager)
+	sessionService = services.NewSessionService(*sessionManager)
+	ocrService = services.NewOCRService(stores.NewOCRClientStore())
+
 	gob.Register([]*types.ImageData{})
 	gob.Register(types.ImageData{})
 
@@ -71,7 +80,7 @@ func initTempDir() (string, error) {
 }
 
 func appHandler(w http.ResponseWriter, r *http.Request) {
-	img, err := getCurrentImage(r.Context())
+	img, err := imageService.GetCurrentImage(r.Context())
 	var component templ.Component
 	if err != nil {
 		component = templates.MainLayout(nil)
@@ -83,7 +92,7 @@ func appHandler(w http.ResponseWriter, r *http.Request) {
 
 func protectImageHandler(w http.ResponseWriter, r *http.Request) {
 	imageName := r.URL.Path[len("/img/"):]
-	if !canAccessImage(r.Context(), imageName) {
+	if !imageService.ImageIsAllowed(r.Context(), imageName) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -135,12 +144,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := putAllowedImage(r.Context(), image); err != nil {
+	if err := imageService.AddAllowedImage(r.Context(), image); err != nil {
 		http.Error(w, "Unable to save to session: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	setCurrentImage(r.Context(), image)
+	imageService.SetCurrentImage(r.Context(), image)
 	templates.CanvasImage(image).Render(r.Context(), w)
 
 }
@@ -167,7 +176,9 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageData, err := getCurrentImage(r.Context())
+	sessionId := sessionService.GetOrGenerateId(r.Context())
+
+	imageData, err := imageService.GetCurrentImage(r.Context())
 	if err != nil {
 		http.Error(w, "unable to get current image "+err.Error(), http.StatusInternalServerError)
 		return
@@ -184,10 +195,7 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to decode "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	points := unscalePoints(width, height, imageData.Width, imageData.Height, []image.Point{
-		{X: ao, Y: bo},
-		{X: xo, Y: yo},
-	})
+	points := unscalePoints(width, height, imageData.Width, imageData.Height, image.Point{X: ao, Y: bo}, image.Point{X: xo, Y: yo})
 	croppedImage := cropImage(img, *points[0], *points[1])
 
 	var buf bytes.Buffer
@@ -195,11 +203,16 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to encode image "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// ppImage, err := preprocessImage(buf.Bytes())
+	// if err != nil {
+	// 	http.Error(w, "pre process image failed "+err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	client := gosseract.NewClient()
 	defer client.Close()
 
-	text, err := ocrFromBytes(buf.Bytes())
+	text, err := ocrService.OcrFromBytes(sessionId, buf.Bytes())
 	if err != nil {
 		http.Error(w, "OCR failed "+err.Error(), http.StatusInternalServerError)
 		return
@@ -210,7 +223,7 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 	templates.TextResult(imgSrc, text).Render(r.Context(), w)
 }
 
-func unscalePoints(width int, height int, originalWidth int, originalHeight int, points []image.Point) []*image.Point {
+func unscalePoints(width int, height int, originalWidth int, originalHeight int, points ...image.Point) []*image.Point {
 	xScale := float64(originalWidth) / float64(width)
 	yScale := float64(originalHeight) / float64(height)
 	res := make([]*image.Point, len(points))
@@ -230,21 +243,6 @@ func cropImage(src image.Image, a, b image.Point) image.Image {
 	draw.Draw(cropped, rect, src, image.Point{a.X, a.Y}, draw.Src)
 
 	return cropped
-}
-
-func ocrFromBytes(imageByte []byte) (string, error) {
-	client := gosseract.NewClient()
-	defer client.Close()
-
-	if err := client.SetImageFromBytes(imageByte); err != nil {
-		return "", err
-	}
-
-	text, err := client.Text()
-	if err != nil {
-		return "", err
-	}
-	return text, nil
 }
 
 func NewImage(fileName string, width int, height int) *types.ImageData {

@@ -36,13 +36,13 @@ func Upload(swapTarget string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(swapTarget)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/upload.templ`, Line: 6, Col: 24}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/upload.templ`, Line: 4, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap=\"innerHTML\" enctype=\"multipart/form-data\" hx-on::after-request=\"this.reset()\"><input type=\"file\" name=\"image\" accept=\"image/*\" required hx-> <button type=\"submit\" class=\"upload-button\">Upload</button><div class=\"loading-indicator\">Loading...</div><style>\n\t\tme {\n\t\t\tflex: 0 1 auto;\n\t\t}\n        .loading-indicator {\n            display: none;\n        }\n\n        .htmx-request .loading-indicator {\n            display: inline;\n        }\n\n        .htmx-request .upload-button {\n            display: none;\n        }\n    \t</style></form>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-swap=\"innerHTML\" enctype=\"multipart/form-data\" hx-on::after-request=\"this.reset()\"><input type=\"file\" name=\"image\" accept=\"image/*\" required hx-> <button type=\"submit\" class=\"upload-button\">Upload</button><div class=\"loading-indicator\">Loading...</div><style>\n\t\tme {\n\t\t\tflex: 0 1 auto;\n\t\t}\n\n\t\t.loading-indicator {\n\t\t\tdisplay: none;\n\t\t}\n\n\t\t.htmx-request .loading-indicator {\n\t\t\tdisplay: inline;\n\t\t}\n\n\t\t.htmx-request .upload-button {\n\t\t\tdisplay: none;\n\t\t}\n\t</style></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

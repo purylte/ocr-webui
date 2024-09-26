@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/go:1-1.23-bookworm
 
 RUN apt-get update && \
-    apt-get install -y libleptonica-dev libtesseract-dev tesseract-ocr-eng && \
+    apt-get install -y libleptonica-dev libtesseract-dev tesseract-ocr-eng tesseract-ocr-jpn && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
