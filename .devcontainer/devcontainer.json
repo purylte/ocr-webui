@@ -4,7 +4,9 @@
 	"name": "Go OCR",
 	"dockerFile": "Dockerfile",
 	"remoteUser": "root",
-	"features": {},
+	"features": {
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+	},
 	"postCreateCommand": "go install github.com/a-h/templ/cmd/templ@latest && go install github.com/air-verse/air@latest",
 	// "postCreateCommand": "cd gocv && make install",
 	"customizations": {

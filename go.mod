@@ -1,6 +1,6 @@
 module github.com/purylte/ocr-webui
 
-go 1.22.3
+go 1.23
 
 require gocv.io/x/gocv v0.38.0
 
