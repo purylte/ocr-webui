@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/purylte/ocr-webui/types"
 
-func MainLayout(imageData *types.ImageData) templ.Component {
+func MainLayout(imageData *types.ImageData, langs []string, selectedLangs []string, selectedPsm int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -51,11 +51,11 @@ func MainLayout(imageData *types.ImageData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = LangForm("eng", "jpn-best").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = LangForm(langs, selectedLangs).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = PCMForm("0", "1").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PSMForm(selectedPsm).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

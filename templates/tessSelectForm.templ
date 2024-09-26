@@ -1,28 +1,31 @@
 package templates
 
-templ LangForm(langs ...string) {
+import "strconv"
 
-<div>
-  <button>Languages
-    <script>
+templ LangForm(langs []string, selectedLangs []string) {
+	@templ.JSONScript("selectedLangs", selectedLangs)
+	<div>
+		<button>
+			Languages
+			<script>
       me().on('click', ev => {
         const content = document.getElementById("contentLang")
         content.style.display = content.style.display === "flex" ? "none" : "flex";
       })
     </script>
-  </button>
-  <div id="contentLang">
-    for _, lang := range langs {
-    <label><input type="checkbox" class="checkboxLang" name={lang} onchange="handleCheckboxChange()"> {lang}</label>
-    }
-  </div>
-  <style>
+		</button>
+		<div id="contentLang">
+			for _, lang := range langs {
+				<label><input type="checkbox" class="checkboxLang" name={ lang } onchange="handleCheckboxChange()"/> { lang }</label>
+			}
+		</div>
+		<style>
     #contentLang {
       display: none;
       flex-direction: column;
     }
   </style>
-  <script>
+		<script>
     let debounceTimeout;
 
     function handleCheckboxChange() {
@@ -30,8 +33,9 @@ templ LangForm(langs ...string) {
       debounceTimeout = setTimeout(() => {
         const selectedOptions = getSelectedOptions();
         if (selectedOptions.length > 0) {
-          htmx.ajax('POST', '/set-langs', {
-            values: { options: selectedOptions }
+          htmx.ajax('POST', '/set-opt', {
+            values: { langs: selectedOptions },
+            swap: "none"
           });
         }
       }, 300); // 300 ms debounce delay
@@ -47,16 +51,92 @@ templ LangForm(langs ...string) {
       });
       return selectedOptions
     }
+    onloadAdd(_ => {
+      const checkboxes = document.querySelectorAll('.checkboxLang');
+      const selectedLangs = JSON.parse(document.getElementById('selectedLangs').textContent);
+      checkboxes.forEach(checkbox => {
+        if (selectedLangs.includes(checkbox.name)) {
+         checkbox.checked = true;
+        } else {
+          checkbox.checked = false;
+        }
+      });
+    })
   </script>
-</div>
+	</div>
 }
 
-templ PCMForm(pcms ...string) {
-<label> PCM Mode
-  <select name="pcm" hx-post="/set-pcm">
-    for _, pcm := range pcms {
-    <option value={pcm}>{ pcm }</option>
-    }
-  </select>
-</label>
+templ PSMForm(now int) {
+	<label>
+		PSM
+		<select name="psm" hx-post="/set-opt" hx-swap="none">
+			for psm := 0; psm <= 13; psm++ {
+				<option
+					value={ strconv.Itoa(psm) }
+					if psm == now {
+						selected="selected"
+					}
+				>{ strconv.Itoa(psm) }</option>
+			}
+		</select>
+	</label>
+	<span>
+		?
+		<div>
+			<strong>0</strong> - Orientation and script detection (OSD) only.
+			<br/>
+			<strong>1</strong> - Automatic page segmentation with OSD.
+			<br/>
+			<strong>2</strong> - Automatic page segmentation, but no OSD, or OCR.
+			<br/>
+			<strong>3</strong> - (DEFAULT) Fully automatic page segmentation, but no OSD.
+			<br/>
+			<strong>4</strong> - Assume a single column of text of variable sizes.
+			<br/>
+			<strong>5</strong> - Assume a single uniform block of vertically aligned text.
+			<br/>
+			<strong>6</strong> - Assume a single uniform block of text.
+			<br/>
+			<strong>7</strong> - Treat the image as a single text line.
+			<br/>
+			<strong>8</strong> - Treat the image as a single word.
+			<br/>
+			<strong>9</strong> - Treat the image as a single word in a circle.
+			<br/>
+			<strong>10</strong> - Treat the image as a single character.
+			<br/>
+			<strong>11</strong> - Find as much text as possible in no particular order.
+			<br/>
+			<strong>12</strong> - Sparse text with orientation and script det.
+			<br/>
+			<strong>13</strong> - Treat the image as a single text line, bypassing hacks that are Tesseract-specific.
+		</div>
+		<style>
+      me {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+        color: blue;
+        text-decoration: underline;
+      }
+      me div {
+        visibility:hidden;
+        width: 50vw;
+        background-color: black;
+        color: #fff;
+        text-align: left;
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        position: absolute;
+        z-index: 50;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      me:hover div {
+        visibility: visible;
+        opacity: 1;
+      }
+
+    </style>
+	</span>
 }

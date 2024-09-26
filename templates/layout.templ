@@ -2,33 +2,31 @@ package templates
 
 import "github.com/purylte/ocr-webui/types"
 
-templ MainLayout(imageData *types.ImageData) {
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<script src="https://unpkg.com/htmx.org@2.0.2"></script>
-	<script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline/script.js"></script>
-	<script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js"></script>
-	<title>OCR Web UI</title>
-</head>
-
-<body>
-	@ClipboardUpload("#canvas-image")
-	@PositionForm("#response-img")
-	<div>
-		<div n1>
+templ MainLayout(imageData *types.ImageData, langs []string, selectedLangs []string, selectedPsm int) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<script src="https://unpkg.com/htmx.org@2.0.2"></script>
+			<script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline/script.js"></script>
+			<script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js"></script>
+			<title>OCR Web UI</title>
+		</head>
+		<body>
+			@ClipboardUpload("#canvas-image")
+			@PositionForm("#response-img")
 			<div>
-				@Upload("#canvas-image")
-				@LangForm("eng", "jpn-best")
-				@PCMForm("0", "1")
-			</div>
-			@CanvasImageContainer("canvas-image", imageData)
-		</div>
-		<div n2 id="response-img"></div>
-		<style>
+				<div n1>
+					<div>
+						@Upload("#canvas-image")
+						@LangForm(langs, selectedLangs)
+						@PSMForm(selectedPsm)
+					</div>
+					@CanvasImageContainer("canvas-image", imageData)
+				</div>
+				<div n2 id="response-img"></div>
+				<style>
 			me {
 				display: flex;
 				height: 100%;
@@ -53,8 +51,8 @@ templ MainLayout(imageData *types.ImageData) {
 				overflow-y: auto;
 			}
 		</style>
-	</div>
-	<style>
+			</div>
+			<style>
 		me {
 			height: calc(100vh - 1rem);
 			margin: 0;
@@ -62,7 +60,6 @@ templ MainLayout(imageData *types.ImageData) {
 			overflow-y: hidden;
 		}
 	</style>
-</body>
-
-</html>
+		</body>
+	</html>
 }

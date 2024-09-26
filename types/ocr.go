@@ -7,13 +7,10 @@ import (
 	"github.com/otiai10/gosseract/v2"
 )
 
-type TessOption struct {
-	Languages []string
-	PCMMode   gosseract.PageSegMode
-}
-
 type OCRClient struct {
-	Client       *gosseract.Client
-	Mutex        sync.Mutex
-	LastAccessed time.Time
+	Client           gosseract.Client
+	Mutex            sync.Mutex
+	CurrentPSM       gosseract.PageSegMode
+	CurrentLanguages []string
+	LastAccessed     time.Time
 }

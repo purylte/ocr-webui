@@ -18,7 +18,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/a-h/templ"
 	"github.com/alexedwards/scs/v2"
 	"github.com/otiai10/gosseract/v2"
 	"github.com/purylte/ocr-webui/cleaner"
@@ -35,6 +34,8 @@ var sessionService *services.SessionService
 var ocrService *services.OCRService
 
 var tempDir string
+
+var availableLanguage []string
 
 func main() {
 	gob.Register([]*types.ImageData{})
@@ -53,6 +54,11 @@ func main() {
 	cleaner.NewOCRClientCleaner(ocrClientStore, 5*time.Minute, 30*time.Minute).Start()
 
 	var err error
+	availableLanguage, err = gosseract.GetAvailableLanguages()
+	if err != nil {
+		log.Fatalf("cannot get tesseract available languages: %v", err)
+	}
+
 	tempDir, err = initTempDir()
 	if err != nil {
 		log.Fatalf("cannot create temp image dir: %v", err)
@@ -66,6 +72,7 @@ func main() {
 	mux.HandleFunc("/app", appHandler)
 	mux.HandleFunc("/upload", uploadHandler)
 	mux.HandleFunc("/crop", cropHandler)
+	mux.HandleFunc("/set-opt", setOcrClientOptionHandler)
 	log.Fatal(http.ListenAndServe(":3000", sessionManager.LoadAndSave(mux)))
 
 }
@@ -90,13 +97,19 @@ func initTempDir() (string, error) {
 }
 
 func appHandler(w http.ResponseWriter, r *http.Request) {
-	img, err := imageService.GetCurrentImage(r.Context())
-	var component templ.Component
-	if err != nil {
-		component = templates.MainLayout(nil)
-	} else {
-		component = templates.MainLayout(img)
+	if r.Method != http.MethodGet {
+		http.Error(w, "expected get", http.StatusMethodNotAllowed)
+		return
 	}
+	img, err := imageService.GetCurrentImage(r.Context())
+	if err != nil {
+		img = nil
+	}
+	sessionId := sessionService.GetOrGenerateId(r.Context())
+
+	langs := ocrService.GetLanguages(sessionId)
+	psm := ocrService.GetPSM(sessionId)
+	component := templates.MainLayout(img, availableLanguage, langs, int(psm))
 	component.Render(r.Context(), w)
 }
 
@@ -231,6 +244,37 @@ func cropHandler(w http.ResponseWriter, r *http.Request) {
 	imgBase64 := base64.StdEncoding.EncodeToString(buf.Bytes())
 	imgSrc := "data:image/jpeg;base64," + imgBase64
 	templates.TextResult(imgSrc, text).Render(r.Context(), w)
+}
+
+func setOcrClientOptionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "expected post", http.StatusMethodNotAllowed)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "error parsing form "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	sessionId := sessionService.GetOrGenerateId(r.Context())
+	if langs := r.Form["langs"]; langs != nil {
+		if err := ocrService.SetLanguages(sessionId, langs); err != nil {
+			http.Error(w, "error setting langs "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	if psmV, err := strconv.Atoi(r.FormValue("psm")); err == nil {
+		psm := gosseract.PageSegMode(psmV)
+		if err := ocrService.SetPSM(sessionId, psm); err != nil {
+			http.Error(w, "error setting psm "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	// if err != nil {
+	// 	http.Error(w, "invalid form values "+err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 }
 
 func unscalePoints(width int, height int, originalWidth int, originalHeight int, points ...image.Point) []*image.Point {

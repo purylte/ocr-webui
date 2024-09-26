@@ -6,13 +6,22 @@ import (
 )
 
 type OCRService struct {
-	clientStore stores.OCRClientStore
+	clientStore *stores.OCRClientStore
 }
 
 func NewOCRService(clientStore *stores.OCRClientStore) *OCRService {
 	return &OCRService{
-		clientStore: *clientStore,
+		clientStore: clientStore,
 	}
+}
+
+func (s *OCRService) GetLanguages(sessionId string) []string {
+	client := s.clientStore.GetOrInitClient(sessionId)
+	return client.CurrentLanguages
+}
+func (s *OCRService) GetPSM(sessionId string) gosseract.PageSegMode {
+	client := s.clientStore.GetOrInitClient(sessionId)
+	return client.CurrentPSM
 }
 
 func (s *OCRService) SetLanguages(sessionId string, languages []string) error {

@@ -8,7 +8,9 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func LangForm(langs ...string) templ.Component {
+import "strconv"
+
+func LangForm(langs []string, selectedLangs []string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,6 +31,10 @@ func LangForm(langs ...string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templ.JSONScript("selectedLangs", selectedLangs).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div><button>Languages<script>\n      me().on('click', ev => {\n        const content = document.getElementById(\"contentLang\")\n        content.style.display = content.style.display === \"flex\" ? \"none\" : \"flex\";\n      })\n    </script></button><div id=\"contentLang\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -41,7 +47,7 @@ func LangForm(langs ...string) templ.Component {
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(lang)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/tessSelectForm.templ`, Line: 16, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/tessSelectForm.templ`, Line: 19, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -54,7 +60,7 @@ func LangForm(langs ...string) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(lang)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/tessSelectForm.templ`, Line: 16, Col: 107}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/tessSelectForm.templ`, Line: 19, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -65,7 +71,7 @@ func LangForm(langs ...string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><style>\n    #contentLang {\n      display: none;\n      flex-direction: column;\n    }\n  </style><script>\n    let debounceTimeout;\n\n    function handleCheckboxChange() {\n      clearTimeout(debounceTimeout);\n      debounceTimeout = setTimeout(() => {\n        const selectedOptions = getSelectedOptions();\n        if (selectedOptions.length > 0) {\n          htmx.ajax('POST', '/set-langs', {\n            values: { options: selectedOptions }\n          });\n        }\n      }, 300); // 300 ms debounce delay\n    }\n\n    function getSelectedOptions() {\n      const checkboxes = document.querySelectorAll('.checkboxLang');\n      const selectedOptions = [];\n      checkboxes.forEach(checkbox => {\n        if (checkbox.checked) {\n          selectedOptions.push(checkbox.name);\n        }\n      });\n      return selectedOptions\n    }\n  </script></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><style>\n    #contentLang {\n      display: none;\n      flex-direction: column;\n    }\n  </style><script>\n    let debounceTimeout;\n\n    function handleCheckboxChange() {\n      clearTimeout(debounceTimeout);\n      debounceTimeout = setTimeout(() => {\n        const selectedOptions = getSelectedOptions();\n        if (selectedOptions.length > 0) {\n          htmx.ajax('POST', '/set-opt', {\n            values: { langs: selectedOptions },\n            swap: \"none\"\n          });\n        }\n      }, 300); // 300 ms debounce delay\n    }\n\n    function getSelectedOptions() {\n      const checkboxes = document.querySelectorAll('.checkboxLang');\n      const selectedOptions = [];\n      checkboxes.forEach(checkbox => {\n        if (checkbox.checked) {\n          selectedOptions.push(checkbox.name);\n        }\n      });\n      return selectedOptions\n    }\n    onloadAdd(_ => {\n      const checkboxes = document.querySelectorAll('.checkboxLang');\n      const selectedLangs = JSON.parse(document.getElementById('selectedLangs').textContent);\n      checkboxes.forEach(checkbox => {\n        if (selectedLangs.includes(checkbox.name)) {\n         checkbox.checked = true;\n        } else {\n          checkbox.checked = false;\n        }\n      });\n    })\n  </script></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -73,7 +79,7 @@ func LangForm(langs ...string) templ.Component {
 	})
 }
 
-func PCMForm(pcms ...string) templ.Component {
+func PSMForm(now int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -94,32 +100,42 @@ func PCMForm(pcms ...string) templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<label>PCM Mode <select name=\"pcm\" hx-post=\"/set-pcm\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<label>PSM <select name=\"psm\" hx-post=\"/set-opt\" hx-swap=\"none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		for _, pcm := range pcms {
+		for psm := 0; psm <= 13; psm++ {
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(pcm)
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(psm))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/tessSelectForm.templ`, Line: 58, Col: 22}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/tessSelectForm.templ`, Line: 75, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if psm == now {
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" selected=\"selected\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(pcm)
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(psm))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/tessSelectForm.templ`, Line: 58, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/tessSelectForm.templ`, Line: 79, Col: 24}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -130,7 +146,7 @@ func PCMForm(pcms ...string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></label>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></label> <span>?<div><strong>0</strong> - Orientation and script detection (OSD) only.<br><strong>1</strong> - Automatic page segmentation with OSD.<br><strong>2</strong> - Automatic page segmentation, but no OSD, or OCR.<br><strong>3</strong> - (DEFAULT) Fully automatic page segmentation, but no OSD.<br><strong>4</strong> - Assume a single column of text of variable sizes.<br><strong>5</strong> - Assume a single uniform block of vertically aligned text.<br><strong>6</strong> - Assume a single uniform block of text.<br><strong>7</strong> - Treat the image as a single text line.<br><strong>8</strong> - Treat the image as a single word.<br><strong>9</strong> - Treat the image as a single word in a circle.<br><strong>10</strong> - Treat the image as a single character.<br><strong>11</strong> - Find as much text as possible in no particular order.<br><strong>12</strong> - Sparse text with orientation and script det.<br><strong>13</strong> - Treat the image as a single text line, bypassing hacks that are Tesseract-specific.</div><style>\n      me {\n        position: relative;\n        display: inline-block;\n        cursor: pointer;\n        color: blue;\n        text-decoration: underline;\n      }\n      me div {\n        visibility:hidden;\n        width: 50vw;\n        background-color: black;\n        color: #fff;\n        text-align: left;\n        border-radius: 0.5rem;\n        padding: 0.5rem;\n        position: absolute;\n        z-index: 50;\n        opacity: 0;\n        transition: opacity 0.3s;\n      }\n      me:hover div {\n        visibility: visible;\n        opacity: 1;\n      }\n\n    </style></span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

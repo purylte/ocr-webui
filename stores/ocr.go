@@ -10,12 +10,13 @@ import (
 
 type OCRClientStore struct {
 	clients map[string]*types.OCRClient
-	mutex   *sync.Mutex
+	mutex   sync.Mutex
 }
 
 func NewOCRClientStore() *OCRClientStore {
 	return &OCRClientStore{
 		clients: make(map[string]*types.OCRClient),
+		mutex:   sync.Mutex{},
 	}
 }
 
@@ -29,9 +30,11 @@ func (s *OCRClientStore) GetOrInitClient(sessionID string) *types.OCRClient {
 	}
 
 	newClient := &types.OCRClient{
-		Client:       gosseract.NewClient(),
-		Mutex:        sync.Mutex{},
-		LastAccessed: time.Now(),
+		Client:           *gosseract.NewClient(),
+		Mutex:            sync.Mutex{},
+		LastAccessed:     time.Now(),
+		CurrentPSM:       3,
+		CurrentLanguages: []string{"eng"},
 	}
 	s.clients[sessionID] = newClient
 	return newClient
