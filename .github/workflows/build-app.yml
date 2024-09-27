@@ -39,7 +39,7 @@ jobs:
         tar -czvf release/ocr-webui.tar.gz -C release ocr-webui
 
     - name: Upload release artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ocr-webui
         path: release/ocr-webui.tar.gz
