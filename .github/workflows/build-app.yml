@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install Tesseract dependencies
       run: |
@@ -22,7 +22,7 @@ jobs:
         sudo apt-get install -y libtesseract-dev
 
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
         go-version: '1.23'
 
@@ -44,7 +44,7 @@ jobs:
         tar -czvf release/ocr-webui.tar.gz -C release ocr-webui
 
     - name: Upload release artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ocr-webui
         path: release/ocr-webui.tar.gz
