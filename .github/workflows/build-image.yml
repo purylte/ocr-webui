@@ -2,9 +2,8 @@ name: Docker Build and Push
 
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+    tags:
+      - "v*.*.*"
 
 jobs:
   build-and-push:
@@ -24,4 +23,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: ghcr.io/${{ github.repository }}:latest
+        tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
