@@ -23,7 +23,7 @@ jobs:
 
     - name: Build
       run: |
-        go build -o ocr-webui ./...
+        go build -o ocr-webui
 
     - name: Run tests
       run: go test ./...
