@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"image"
 	"image/draw"
@@ -28,6 +29,8 @@ import (
 
 	_ "image/png"
 )
+
+var listenAddr = flag.String("addr", ":3000", "HTTP server listen address")
 
 var imageService *services.ImageService
 var sessionService *services.SessionService
@@ -73,7 +76,7 @@ func main() {
 	mux.HandleFunc("/upload", uploadHandler)
 	mux.HandleFunc("/crop", cropHandler)
 	mux.HandleFunc("/set-opt", setOcrClientOptionHandler)
-	log.Fatal(http.ListenAndServe(":3000", sessionManager.LoadAndSave(mux)))
+	log.Fatal(http.ListenAndServe(*listenAddr, sessionManager.LoadAndSave(mux)))
 
 }
 

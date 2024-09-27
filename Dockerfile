@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     libleptonica-dev \
     libtesseract-dev \
     tesseract-ocr \
+    tesseract-ocr-jpn \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root/
