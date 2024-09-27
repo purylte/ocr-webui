@@ -31,20 +31,13 @@ jobs:
         go build -o ocr-webui
 
     - name: Run tests
-      run: go test ./...
+      run: go test ./... 
 
-    - name: Publish
-      if: github.ref == 'refs/heads/master'
-      run: |
-        # Replace with your publishing commands
-        echo "Publishing the build..."
-        # Example: Upload the artifact
-        mkdir -p release
-        cp ocr-webui release/
-        tar -czvf release/ocr-webui.tar.gz -C release ocr-webui
-
-    - name: Upload release artifact
-      uses: actions/upload-artifact@v4
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
       with:
-        name: ocr-webui
-        path: release/ocr-webui.tar.gz
+        tag: ${{ github.sha }}
+        files: ocr-webui 
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
