@@ -72,7 +72,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/img/", protectImageHandler)
-	mux.HandleFunc("/app", appHandler)
+	mux.HandleFunc("/", appHandler)
 	mux.HandleFunc("/upload", uploadHandler)
 	mux.HandleFunc("/crop", cropHandler)
 	mux.HandleFunc("/set-opt", setOcrClientOptionHandler)

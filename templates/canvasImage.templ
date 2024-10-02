@@ -3,11 +3,11 @@ package templates
 import "github.com/purylte/ocr-webui/types"
 
 templ CanvasImageContainer(containerId string, imageData *types.ImageData) {
-<div>
-    <div id={ containerId }>
-        @CanvasImage(imageData)
-    </div>
-    <style>
+	<div>
+		<div id={ containerId }>
+			@CanvasImage(imageData)
+		</div>
+		<style>
         me {
             flex: 0 1 auto;
             background-color: red;
@@ -23,7 +23,7 @@ templ CanvasImageContainer(containerId string, imageData *types.ImageData) {
             display: flex;
         }
     </style>
-    <script>
+		<script>
         const pos = { start: { x: null, y: null }, end: { x: null, y: null } }
 
         const clearPos = function () {
@@ -80,7 +80,6 @@ templ CanvasImageContainer(containerId string, imageData *types.ImageData) {
             const canvas = document.getElementById("canvas")
             const img = canvas.nextElementSibling
             const parentRect = canvas.parentElement.parentElement.getBoundingClientRect()
-            console.log(parentRect.height)
             const originalWidth = JSON.parse(document.getElementById('originalWidth').textContent);
             const originalHeight = JSON.parse(document.getElementById('originalHeight').textContent);
             const { width, height } = getMaxSize(originalWidth, originalHeight, parentRect.width, parentRect.height)
@@ -94,55 +93,57 @@ templ CanvasImageContainer(containerId string, imageData *types.ImageData) {
             calculateCanvasSize()
         })
     </script>
-</div>
+	</div>
 }
 
 templ CanvasImage(imageData *types.ImageData) {
-if imageData == nil {
-Upload or CTRL+V
-<style>
+	if imageData == nil {
+		Upload or CTRL+V
+		<style>
 </style>
-} else {
-@templ.JSONScript("originalWidth", imageData.Width)
-@templ.JSONScript("originalHeight", imageData.Height)
-<canvas id="canvas">
-    <script>
-        me().on('mousedown', e => {
-            clearPosForm()
-            pos.start = getPosition(e)
-            clearPosFormDebounce()
-        })
-        me().on('mousemove', e => {
-            const { x, y } = getPosition(e)
-            const canvas = document.getElementById("canvas")
-            drawRect(canvas.getContext("2d"), pos.start.x, pos.start.y, x, y)
-        })
-        me().on('mouseup', e => {
-            pos.end = getPosition(e)
-            const canvas = document.getElementById("canvas")
-            drawRect(canvas.getContext("2d"), pos.start.x, pos.start.y, pos.end.x, pos.end.y)
-            fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y, canvas.width, canvas.height)
-            submitPosFormDebounce()
-            clearPos()
+	} else {
+		@templ.JSONScript("originalWidth", imageData.Width)
+		@templ.JSONScript("originalHeight", imageData.Height)
+		<div>
+			<canvas id="canvas">
+				<script>
+            me().on('mousedown', e => {
+                clearPosForm()
+                pos.start = getPosition(e)
+                clearPosFormDebounce()
+            })
+            me().on('mousemove', e => {
+                const { x, y } = getPosition(e)
+                const canvas = document.getElementById("canvas")
+                drawRect(canvas.getContext("2d"), pos.start.x, pos.start.y, x, y)
+            })
+            me().on('mouseup', e => {
+                pos.end = getPosition(e)
+                const canvas = document.getElementById("canvas")
+                drawRect(canvas.getContext("2d"), pos.start.x, pos.start.y, pos.end.x, pos.end.y)
+                fillPosForm(pos.start.x, pos.start.y, pos.end.x, pos.end.y, canvas.width, canvas.height)
+                submitPosFormDebounce()
+                clearPos()
+            })
+        </script>
+			</canvas>
+			<img src={ imageData.WebPath }/>
+			<script>
+        onloadAdd(_ => {
+            calculateCanvasSize()
         })
     </script>
-</canvas>
-<img src={ imageData.WebPath } />
-<script>
-    onloadAdd(_ => {
-        calculateCanvasSize()
-    })
-</script>
-<style>
-    me img {
-        z-index: 0;
-        position: relative;
-    }
+			<style>
+        me img {
+            z-index: 0;
+            position: relative;
+        }
 
-    me canvas {
-        z-index: 20;
-        position: absolute;
-    }
-</style>
-}
+        me canvas {
+            z-index: 20;
+            position: absolute;
+        }
+    </style>
+		</div>
+	}
 }
